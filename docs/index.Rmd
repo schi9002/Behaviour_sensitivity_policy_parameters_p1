@@ -1,5 +1,5 @@
 ---
-title: "Supplementary material - S$: Policy sensitivity test"
+title: "Supplementary material - S4: Policy sensitivity test"
 author: "Simon Chiu"
 date: "`r Sys.Date()`"
 output:
