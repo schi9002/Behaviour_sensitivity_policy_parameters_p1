@@ -129,11 +129,11 @@ df_summary<-
 
 combined.sugar.int.df<-readRDS("/media/simon/ExtSSD/Documents/PhD/4 SD Model/7 Sensitivity/Data/R/combined_sugar_int_df.RDS")
 
-# epoch.int.df<-readRDS("/media/simon/ExtSSD/Documents/PhD/4 SD Model/7 Sensitivity/Data/R/lsa_int_epoch_df_2023-08-13.RDS")
-# cci.int.df<-readRDS("/media/simon/ExtSSD/Documents/PhD/4 SD Model/7 Sensitivity/Data/R/lsa_int_cci_df_2023-08-13.RDS")
-# si.int.df<-readRDS("/media/simon/ExtSSD/Documents/PhD/4 SD Model/7 Sensitivity/Data/R/lsa_int_si_df_2023-08-13.RDS")
-# svi.int.df<-readRDS("/media/simon/ExtSSD/Documents/PhD/4 SD Model/7 Sensitivity/Data/R/lsa_int_svi_df_2023-08-13.RDS")
-# ssb.int.df<-readRDS("/media/simon/ExtSSD/Documents/PhD/4 SD Model/7 Sensitivity/Data/R/lsa_int_ssb_df_2023-08-13.RDS")
+epoch.int.df<-readRDS("/media/simon/ExtSSD/Documents/PhD/4 SD Model/7 Sensitivity/Data/R/lsa_int_epoch_df_2023-08-16.RDS")
+cci.int.df<-readRDS("/media/simon/ExtSSD/Documents/PhD/4 SD Model/7 Sensitivity/Data/R/lsa_int_cci_df_2023-08-16.RDS")
+si.int.df<-readRDS("/media/simon/ExtSSD/Documents/PhD/4 SD Model/7 Sensitivity/Data/R/lsa_int_si_df_2023-08-16.RDS")
+svi.int.df<-readRDS("/media/simon/ExtSSD/Documents/PhD/4 SD Model/7 Sensitivity/Data/R/lsa_int_svi_df_2023-08-16.RDS")
+ssb.int.df<-readRDS("/media/simon/ExtSSD/Documents/PhD/4 SD Model/7 Sensitivity/Data/R/lsa_int_ssb_df_2023-08-16.RDS")
 
 
 lsa_int_epoch_df_summary<-readRDS("/media/simon/ExtSSD/Documents/PhD/4 SD Model/7 Sensitivity/Data/R/lsa_int_epoch_df_summary_2023-08-15.RDS")
@@ -423,90 +423,147 @@ Scenarios behavior most impacted by
 
 ## Early Prevention of Obesity in Children ranking
 ```{r, echo=F, message=F, error=F, warning=F}
-
 # + Intervention scale up factor: the assumed fidelity of an the published effect from a control trial as the protocol is scaled up to a national health program.
 # + Exposure variables: while each policy has a variety of assumptions that describe exposure, the modelled health benefit from the policies are impacted by exposure
 # + Intervention effects: The published effects health effects directly change the policy behavior
 # + Relapse: Relapse is th
 
 lsa_int_epoch_df_summary %>%
-  group_by(focus.title) %>%
-  summarise(mean_cum_sum_diff.der_value=mean(mean_cum_sum_diff.der_value)) %>%
+  mutate(focus.class=factor(case_when(focus.title=="\"Effect Non-core OR\""~4,
+                                    focus.title=="Percentage of infants exposed"~2,
+                                    focus.title=="Effect BF OR"~4,
+                                    focus.title=="EPOCH Scale up factor"~1,
+                                    focus.title=="Effect TV OR"~4,
+                                    focus.title=="Relapse Rate EPOCH"~5,
+                                    focus.title=="Relapse Rate"~5),
+                          levels=c(1,2,3,4,5), 
+                         labels=c("Fidelity scale up", "Aggregate exposure", "Behaviour definition","Aggregate health effect","Relapse"))) %>% 
+  mutate(focus.class=ifelse(is.na(focus.class), "Economic assumptions", as.character(focus.class))) %>% 
+  group_by(focus.title, focus.class) %>%
+  summarise(mean_cum_sum_diff.der_value=mean(mean_cum_sum_diff.der_value,na.rm=T)) %>%
   ungroup() %>% 
   arrange(-mean_cum_sum_diff.der_value) %>%
-    mutate(focus.title1=case_when(grepl("Commonwealth Healthcare Costs",focus.title)~"Commonwealth Healthcare Costs",
+  mutate(focus.title1=case_when(grepl("Commonwealth Healthcare Costs",focus.title)~"Commonwealth Healthcare Costs",
                                 grepl("Early Childhood Prevention Cost",focus.title)~"Early Childhood Prevention Cost",
                                 grepl("Household Healthcare Costs",focus.title)~"Household Healthcare Costs ",
                                 grepl("Productivity Loss of guardians from kids missing school",focus.title)~"Productivity Loss of guardians from kids missing school",
                                 grepl("State Healthcare Costs",focus.title)~"State Healthcare Costs",
          grepl("Effect Non-core OR",focus.title)~"Effect Non-core OR")) %>% 
-  mutate(focus.title=ifelse(is.na(focus.title1), focus.title,focus.title1)) %>% 
-  select(focus.title, mean_cum_sum_diff.der_value) %>%
-  rename("Label"="focus.title", "Average cumulative difference in derivatives"="mean_cum_sum_diff.der_value") %>%
+  mutate(focus.title=ifelse(is.na(focus.title1), focus.title,focus.title1)) %>%
+  select(focus.class, focus.title, mean_cum_sum_diff.der_value) %>% 
+  mutate(mean_cum_sum_diff.der_value=sprintf("%0.2e",mean_cum_sum_diff.der_value)) %>% 
+  rename("Type"="focus.class","Label"="focus.title", "Average cumulative difference in derivatives"="mean_cum_sum_diff.der_value") %>%
   knitr::kable(.) %>%
   # kableExtra::add_header_above(c(" " = 1,"Average cummulative difference \n first derivative" = 5)) %>%
   kableExtra::footnote(., "Ranked variables")
+
+
 ```
+
+
 
 
 ## Childcare setting intervention variable ranking
 ```{r, echo=F, message=F, error=F, warning=F}
 lsa_int_cci_df_summary %>%
-  group_by(focus.title) %>%
-  summarise(mean_cum_sum_diff.der_value=mean(mean_cum_sum_diff.der_value)) %>%
+             mutate(focus.class=factor(case_when(focus.title=="CCI Scale up factor"~1,
+                                    focus.title=="Percentage of childcare centers participating in intervention"~2,
+                                    focus.title=="\"Percentage of 3-6 year olds attending formal childcare\""~2,
+                                    focus.title=="\"Proportion of Fruit Juice in Non-alcoholic beverages\""~3,
+                                    focus.title=="Childcare settings intervention Change in Diet coefficients"~4,
+                                    focus.title=="Relapse Rate"~5,
+                                    focus.title=="Proportion of Cordial in SSB"~3,
+                                    focus.title=="Proportion of Packed snacks in Discretionary foods"~3,
+                                    focus.title=="\"Proportion of Cakes/muffins/Cookies in Discretionary foods\""~3,
+                                    focus.title=="\"Percentage of 2-3 year olds attending formal childcare\""~2,
+                                    focus.title=="\"Proportion of Chocolate/candy in Discretionary foods\""~3,
+                                    focus.title=="Childcare settings intervention Change in PA coefficients"~4),
+         levels=c(1,2,3,4,5), 
+         labels=c("Fidelity scale up", "Aggregate exposure", "Behaviour definition","Aggregate health effect","Relapse"))) %>% 
+  mutate(focus.class=ifelse(is.na(focus.class), "Economic assumptions", as.character(focus.class))) %>% 
+  filter(focus.title!="Median Number of hours at center per week") %>% 
+  group_by(focus.title, focus.class) %>%
+  summarise(mean_cum_sum_diff.der_value=mean(mean_cum_sum_diff.der_value,na.rm=T)) %>%
   ungroup() %>% 
   arrange(-mean_cum_sum_diff.der_value) %>%
-      mutate(focus.title1=case_when(grepl("Commonwealth Healthcare Costs",focus.title)~"Commonwealth Healthcare Costs",
+  mutate(focus.title1=case_when(grepl("Commonwealth Healthcare Costs",focus.title)~"Commonwealth Healthcare Costs",
                                 grepl("Early Childhood Prevention Cost",focus.title)~"Early Childhood Prevention Cost",
                                 grepl("Household Healthcare Costs",focus.title)~"Household Healthcare Costs ",
                                 grepl("Productivity Loss of guardians from kids missing school",focus.title)~"Productivity Loss of guardians from kids missing school",
                                 grepl("State Healthcare Costs",focus.title)~"State Healthcare Costs",
          grepl("Effect Non-core OR",focus.title)~"Effect Non-core OR")) %>% 
-  mutate(focus.title=ifelse(is.na(focus.title1), focus.title,focus.title1)) %>% 
-  select(focus.title, mean_cum_sum_diff.der_value) %>%
-  rename("Label"="focus.title", "Average cumulative difference in derivatives"="mean_cum_sum_diff.der_value") %>%
+  mutate(focus.title=ifelse(is.na(focus.title1), focus.title,focus.title1)) %>%
+  select(focus.class, focus.title, mean_cum_sum_diff.der_value) %>% 
+  mutate(mean_cum_sum_diff.der_value=sprintf("%0.2e",mean_cum_sum_diff.der_value)) %>% 
+  rename("Type"="focus.class","Label"="focus.title", "Average cumulative difference in derivatives"="mean_cum_sum_diff.der_value") %>%
   knitr::kable(.) %>%
   # kableExtra::add_header_above(c(" " = 1,"Average cummulative difference \n first derivative" = 5)) %>%
   kableExtra::footnote(., "Ranked variables")
 ```
 
+
 ## School-based settings interventions ranking
 ```{r, echo=F, message=F, error=F, warning=F}
 lsa_int_si_df_summary %>%
-  group_by(focus.title) %>%
-  summarise(mean_cum_sum_diff.der_value=mean(mean_cum_sum_diff.der_value)) %>%
+             mutate(focus.class=factor(case_when(focus.title=="SI Scale up factor"~1,
+                                    focus.title=="SI Percentage of Schools participating in intervention"~2,
+                                    focus.title=="SI percentage of total diet consumed at school"~3,
+                                    focus.title=="Relapse Rate"~5,
+                                    focus.title=="SI % change in PA"~4,
+                                    focus.title=="SI Percentage of children attending School"~2,
+                                    focus.title=="SI % Reduction In student Purchases"~4),
+                          levels=c(1,2,3,4,5), 
+                          labels=c("Fidelity scale up", "Aggregate exposure", "Behaviour definition","Aggregate health effect","Relapse"))) %>% 
+  mutate(focus.class=ifelse(is.na(focus.class), "Economic assumptions", as.character(focus.class))) %>% 
+  filter(focus.title!="Median Number of hours at center per week") %>% 
+  group_by(focus.title, focus.class) %>%
+  summarise(mean_cum_sum_diff.der_value=mean(mean_cum_sum_diff.der_value,na.rm=T)) %>%
   ungroup() %>% 
   arrange(-mean_cum_sum_diff.der_value) %>%
-      mutate(focus.title1=case_when(grepl("Commonwealth Healthcare Costs",focus.title)~"Commonwealth Healthcare Costs",
+  mutate(focus.title1=case_when(grepl("Commonwealth Healthcare Costs",focus.title)~"Commonwealth Healthcare Costs",
                                 grepl("Early Childhood Prevention Cost",focus.title)~"Early Childhood Prevention Cost",
                                 grepl("Household Healthcare Costs",focus.title)~"Household Healthcare Costs ",
                                 grepl("Productivity Loss of guardians from kids missing school",focus.title)~"Productivity Loss of guardians from kids missing school",
                                 grepl("State Healthcare Costs",focus.title)~"State Healthcare Costs",
          grepl("Effect Non-core OR",focus.title)~"Effect Non-core OR")) %>% 
-  mutate(focus.title=ifelse(is.na(focus.title1), focus.title,focus.title1)) %>% 
-  select(focus.title, mean_cum_sum_diff.der_value) %>%
-  rename("Label"="focus.title", "Average cumulative difference in derivatives"="mean_cum_sum_diff.der_value") %>%
+  mutate(focus.title=ifelse(is.na(focus.title1), focus.title,focus.title1)) %>%
+  select(focus.class, focus.title, mean_cum_sum_diff.der_value) %>% 
+  mutate(mean_cum_sum_diff.der_value=sprintf("%0.2e",mean_cum_sum_diff.der_value)) %>% 
+  rename("Type"="focus.class","Label"="focus.title", "Average cumulative difference in derivatives"="mean_cum_sum_diff.der_value") %>%
   knitr::kable(.) %>%
   # kableExtra::add_header_above(c(" " = 1,"Average cummulative difference \n first derivative" = 5)) %>%
   kableExtra::footnote(., "Ranked variables")
+
 ```
 
 ## Sports voucher interventions ranking
 ```{r, echo=F, message=F, error=F, warning=F}
 lsa_int_svi_df_summary %>%
-  group_by(focus.title) %>%
-  summarise(mean_cum_sum_diff.der_value=mean(mean_cum_sum_diff.der_value)) %>%
+         mutate(focus.class=factor(case_when(focus.title=="SVI Scale up factor"~1,
+                                    focus.title=="Average proportion attributed to vouchers"~4,
+                                    focus.title=="Males Average MET Calculated Inputs"~3,
+                                    focus.title=="Females Average MET Calculated Inputs"~3,
+                                    focus.title=="Relapse Rate"~5,
+                                    focus.title=="\"% of population that Registers for vouchers\""~2,
+                                    focus.title=="Average Number of Hours of organised sports or activities Weekly"~3),
+                          levels=c(1,2,3,4,5), 
+                          labels=c("Fidelity scale up", "Aggregate exposure", "Behaviour definition","Aggregate health effect","Relapse"))) %>% 
+  mutate(focus.class=ifelse(is.na(focus.class), "Economic assumptions", as.character(focus.class))) %>% 
+  filter(focus.title!="Median Number of hours at center per week") %>% 
+  group_by(focus.title, focus.class) %>%
+  summarise(mean_cum_sum_diff.der_value=mean(mean_cum_sum_diff.der_value,na.rm=T)) %>%
   ungroup() %>% 
   arrange(-mean_cum_sum_diff.der_value) %>%
-      mutate(focus.title1=case_when(grepl("Commonwealth Healthcare Costs",focus.title)~"Commonwealth Healthcare Costs",
+  mutate(focus.title1=case_when(grepl("Commonwealth Healthcare Costs",focus.title)~"Commonwealth Healthcare Costs",
                                 grepl("Early Childhood Prevention Cost",focus.title)~"Early Childhood Prevention Cost",
                                 grepl("Household Healthcare Costs",focus.title)~"Household Healthcare Costs ",
                                 grepl("Productivity Loss of guardians from kids missing school",focus.title)~"Productivity Loss of guardians from kids missing school",
                                 grepl("State Healthcare Costs",focus.title)~"State Healthcare Costs",
          grepl("Effect Non-core OR",focus.title)~"Effect Non-core OR")) %>% 
-  mutate(focus.title=ifelse(is.na(focus.title1), focus.title,focus.title1)) %>% 
-  select(focus.title, mean_cum_sum_diff.der_value) %>%
-  rename("Label"="focus.title", "Average cumulative difference in derivatives"="mean_cum_sum_diff.der_value") %>%
+  mutate(focus.title=ifelse(is.na(focus.title1), focus.title,focus.title1)) %>%
+  select(focus.class, focus.title, mean_cum_sum_diff.der_value) %>% 
+  mutate(mean_cum_sum_diff.der_value=sprintf("%0.2e",mean_cum_sum_diff.der_value)) %>% 
+  rename("Type"="focus.class","Label"="focus.title", "Average cumulative difference in derivatives"="mean_cum_sum_diff.der_value") %>%
   knitr::kable(.) %>%
   # kableExtra::add_header_above(c(" " = 1,"Average cummulative difference \n first derivative" = 5)) %>%
   kableExtra::footnote(., "Ranked variables")
@@ -515,22 +572,34 @@ lsa_int_svi_df_summary %>%
 ## Sugar-Sweetened Beverge Tax % ranking
 ```{r, echo=F, message=F, error=F, warning=F}
 lsa_int_ssb_df_summary %>%
-  group_by(focus.title) %>%
-  summarise(mean_cum_sum_diff.der_value=mean(mean_cum_sum_diff.der_value)) %>%
+        mutate(focus.class=factor(case_when(focus.title=="SSB Scale up factor"~1,
+                                    focus.title=="SSB Tax %"~4,
+                                    focus.title=="Relapse Rate"~5,
+                                    focus.title=="PE Soft drink"~3,
+                                    focus.title=="PE Fruit Drink"~3,
+                                    focus.title=="PE Cordial"~3),
+                          levels=c(1,2,3,4,5), 
+                          labels=c("Fidelity scale up", "Aggregate exposure", "Behaviour definition","Aggregate health effect","Relapse"))) %>% 
+  mutate(focus.class=ifelse(is.na(focus.class), "Economic assumptions", as.character(focus.class))) %>% 
+  filter(focus.title!="Median Number of hours at center per week") %>% 
+  group_by(focus.title, focus.class) %>%
+  summarise(mean_cum_sum_diff.der_value=mean(mean_cum_sum_diff.der_value,na.rm=T)) %>%
   ungroup() %>% 
   arrange(-mean_cum_sum_diff.der_value) %>%
-      mutate(focus.title1=case_when(grepl("Commonwealth Healthcare Costs",focus.title)~"Commonwealth Healthcare Costs",
+  mutate(focus.title1=case_when(grepl("Commonwealth Healthcare Costs",focus.title)~"Commonwealth Healthcare Costs",
                                 grepl("Early Childhood Prevention Cost",focus.title)~"Early Childhood Prevention Cost",
                                 grepl("Household Healthcare Costs",focus.title)~"Household Healthcare Costs ",
                                 grepl("Productivity Loss of guardians from kids missing school",focus.title)~"Productivity Loss of guardians from kids missing school",
                                 grepl("State Healthcare Costs",focus.title)~"State Healthcare Costs",
          grepl("Effect Non-core OR",focus.title)~"Effect Non-core OR")) %>% 
-  mutate(focus.title=ifelse(is.na(focus.title1), focus.title,focus.title1)) %>% 
-  select(focus.title, mean_cum_sum_diff.der_value) %>%
-  rename("Label"="focus.title", "Average cumulative difference in derivatives"="mean_cum_sum_diff.der_value") %>%
+  mutate(focus.title=ifelse(is.na(focus.title1), focus.title,focus.title1)) %>%
+  select(focus.class, focus.title, mean_cum_sum_diff.der_value) %>% 
+  mutate(mean_cum_sum_diff.der_value=sprintf("%0.2e",mean_cum_sum_diff.der_value)) %>% 
+  rename("Type"="focus.class","Label"="focus.title", "Average cumulative difference in derivatives"="mean_cum_sum_diff.der_value") %>%
   knitr::kable(.) %>%
   # kableExtra::add_header_above(c(" " = 1,"Average cummulative difference \n first derivative" = 5)) %>%
   kableExtra::footnote(., "Ranked variables")
+
 ```
 
 ## Overall Ranking of base model sensitivity
@@ -552,7 +621,227 @@ df_summary %>%
   knitr::kable(.) %>%
   kableExtra::add_header_above(c(" " = 1,"Average cummulative difference \n first derivative" = 5)) %>%
   kableExtra::footnote(., "Ranked variables")
+
+
+# Print out to csv
+# df_summary %>%
+# group_by(focus.title, scenario) %>%
+# summarise(mean_cum_sum_diff.der_value=mean(mean_cum_sum_diff.der_value)) %>%
+# arrange(-mean_cum_sum_diff.der_value) %>%
+# select(focus.title, scenario,  mean_cum_sum_diff.der_value) %>%
+# spread(., scenario, mean_cum_sum_diff.der_value) %>%
+# mutate(total=SSB+EPOCH+CCI+SI+SVI) %>%
+# arrange(-total) %>% select(-total) %>%
+# mutate(EPOCH=sprintf("%0.3f",mean(EPOCH)),
+#      CCI=sprintf("%0.3f",mean(CCI)),
+#      SI=sprintf("%0.3f",mean(SI)),
+#      SVI=sprintf("%0.3f",mean(SVI)),
+#      SSB=sprintf("%0.3f",mean(SSB))) %>%
+#   rename("Label"="focus.title") %>% ungroup() %>% 
+#   filter(row_number()<=10) %>%
+#   write.csv()
 #   
+```
+
+
+## Overall Ranking of policy sensitivity
+```{r}
+lsa_int_epoch_df_summary %>% 
+mutate(focus.class=factor(case_when(focus.title=="\"Effect Non-core OR\""~4,
+                                    focus.title=="Percentage of infants exposed"~2,
+                                    focus.title=="Effect BF OR"~4,
+                                    focus.title=="EPOCH Scale up factor"~1,
+                                    focus.title=="Effect TV OR"~4,
+                                    focus.title=="Relapse Rate EPOCH"~5,
+                                    focus.title=="Relapse Rate"~5),
+                          levels=c(1,2,3,4,5), 
+                         labels=c("Fidelity scale up", "Aggregate exposure", "Behaviour definition","Aggregate health effect","Relapse"))) %>% 
+  mutate(focus.class=ifelse(is.na(focus.class), "Economic assumptions", as.character(focus.class))) %>% 
+  # select(focus.class,focus.title) %>% table(., useNA = c("always")) %>% data.frame() %>% filter(Freq>0)
+  filter(!is.na(focus.class)) %>%
+  group_by(focus.class) %>% 
+  summarise(mean_cum_sum_diff.der_value=mean(mean_cum_sum_diff.der_value, na.rm=T)) %>% 
+  mutate(scenario="EPOCH") %>% 
+  add_case(lsa_int_cci_df_summary %>% 
+             mutate(focus.class=factor(case_when(focus.title=="CCI Scale up factor"~1,
+                                    focus.title=="Percentage of childcare centers participating in intervention"~2,
+                                    focus.title=="\"Percentage of 3-6 year olds attending formal childcare\""~2,
+                                    focus.title=="\"Proportion of Fruit Juice in Non-alcoholic beverages\""~3,
+                                  focus.title=="Childcare settings intervention Change in Diet coefficients"~4,
+                                    focus.title=="Relapse Rate"~5,
+                                    focus.title=="Proportion of Cordial in SSB"~3,
+                                    focus.title=="Proportion of Packed snacks in Discretionary foods"~3,
+                                    focus.title=="\"Proportion of Cakes/muffins/Cookies in Discretionary foods\""~3,
+                                    focus.title=="\"Percentage of 2-3 year olds attending formal childcare\""~2,
+                                    focus.title=="\"Proportion of Chocolate/candy in Discretionary foods\""~3,
+                                    focus.title=="Childcare settings intervention Change in PA coefficients"~4),
+         levels=c(1,2,3,4,5), 
+         labels=c("Fidelity scale up", "Aggregate exposure", "Behaviour definition","Aggregate health effect","Relapse"))) %>% 
+  mutate(focus.class=ifelse(is.na(focus.class), "Economic assumptions", as.character(focus.class))) %>% 
+  # select(focus.class,focus.title) %>% table(., useNA = c("always")) %>% data.frame() %>% filter(Freq>0)
+  filter(!is.na(focus.class)) %>%
+  group_by(focus.class) %>% 
+  summarise(mean_cum_sum_diff.der_value=mean(mean_cum_sum_diff.der_value, na.rm=T)) %>% 
+  mutate(scenario="CCI")) %>% 
+  add_case(lsa_int_si_df_summary %>% 
+             mutate(focus.class=factor(case_when(focus.title=="SI Scale up factor"~1,
+                                    focus.title=="SI Percentage of Schools participating in intervention"~2,
+                                    focus.title=="SI percentage of total diet consumed at school"~3,
+                                    focus.title=="Relapse Rate"~5,
+                                    focus.title=="SI % change in PA"~4,
+                                    focus.title=="SI Percentage of children attending School"~2,
+                                    focus.title=="SI % Reduction In student Purchases"~4),
+                          levels=c(1,2,3,4,5), 
+                          labels=c("Fidelity scale up", "Aggregate exposure", "Behaviour definition","Aggregate health effect","Relapse"))) %>% 
+               mutate(focus.class=ifelse(is.na(focus.class), "Economic assumptions", as.character(focus.class))) %>% 
+  # select(focus.class,focus.title) %>% table(., useNA = c("always")) %>% data.frame() %>% filter(Freq>0)
+  filter(!is.na(focus.class)) %>%
+  group_by(focus.class) %>% 
+  summarise(mean_cum_sum_diff.der_value=mean(mean_cum_sum_diff.der_value, na.rm=T)) %>% 
+    mutate(scenario="SI")) %>% 
+  add_case(lsa_int_svi_df_summary %>% 
+mutate(focus.class=factor(case_when(focus.title=="SVI Scale up factor"~1,
+                                    focus.title=="Average proportion attributed to vouchers"~4,
+                                    focus.title=="Males Average MET Calculated Inputs"~3,
+                                    focus.title=="Females Average MET Calculated Inputs"~3,
+                                    focus.title=="Relapse Rate"~5,
+                                    focus.title=="\"% of population that Registers for vouchers\""~2,
+                                    focus.title=="Average Number of Hours of organised sports or activities Weekly"~3),
+                          levels=c(1,2,3,4,5), 
+                         labels=c("Fidelity scale up", "Aggregate exposure", "Behaviour definition","Aggregate health effect","Relapse"))) %>% 
+    mutate(focus.class=ifelse(is.na(focus.class), "Economic assumptions", as.character(focus.class))) %>% 
+  # select(focus.class,focus.title) %>% table(., useNA = c("always")) %>% data.frame() %>% filter(Freq>0)
+  filter(!is.na(focus.class)) %>%
+  group_by(focus.class) %>% 
+  summarise(mean_cum_sum_diff.der_value=mean(mean_cum_sum_diff.der_value, na.rm=T)) %>% 
+  mutate(scenario="SVI")) %>% 
+  add_case(lsa_int_ssb_df_summary %>% 
+mutate(focus.class=factor(case_when(focus.title=="SSB Scale up factor"~1,
+                                    focus.title=="SSB Tax %"~4,
+                                    focus.title=="Relapse Rate"~5,
+                                    focus.title=="PE Soft drink"~3,
+                                    focus.title=="PE Fruit Drink"~3,
+                                    focus.title=="PE Cordial"~3),
+                          levels=c(1,2,3,4,5), 
+                          labels=c("Fidelity scale up", "Aggregate exposure", "Behaviour definition","Aggregate health effect","Relapse"))) %>% 
+    mutate(focus.class=ifelse(is.na(focus.class), "Economic assumptions", as.character(focus.class))) %>% 
+  # select(focus.class,focus.title) %>% table(., useNA = c("always")) %>% data.frame() %>% filter(Freq>0)
+  filter(!is.na(focus.class)) %>%
+  group_by(focus.class) %>% 
+  summarise(mean_cum_sum_diff.der_value=mean(mean_cum_sum_diff.der_value, na.rm=T)) %>% 
+  mutate(scenario="SSB")) %>% 
+  group_by(focus.class) %>% 
+  mutate(total= sum(mean_cum_sum_diff.der_value, na.rm=F)) %>% 
+  spread(., scenario, mean_cum_sum_diff.der_value) %>% 
+  arrange(-total) %>% select(-total) %>%
+  mutate(EPOCH=ifelse(is.na(EPOCH),"",sprintf("%0.3f",(EPOCH))),
+         CCI=ifelse(is.na(CCI),"",sprintf("%0.3f",(CCI))),
+         SI=ifelse(is.na(SI),"",sprintf("%0.3f",(SI))),
+         SVI=ifelse(is.na(SVI),"",sprintf("%0.3f",(SVI))),
+         SSB=ifelse(is.na(SSB),"",sprintf("%0.3f",(SSB)))) %>%
+  rename(" "="focus.class")  %>% 
+  knitr::kable(.) %>%
+  kableExtra::add_header_above(c(" " = 1,"Average cummulative difference \n first derivative" = 5)) %>% 
+  kableExtra::footnote(., "Average variable type")
+
+
+
+# lsa_int_epoch_df_summary %>% 
+# mutate(focus.class=factor(case_when(focus.title=="\"Effect Non-core OR\""~4,
+#                                     focus.title=="Percentage of infants exposed"~2,
+#                                     focus.title=="Effect BF OR"~4,
+#                                     focus.title=="EPOCH Scale up factor"~1,
+#                                     focus.title=="Effect TV OR"~4,
+#                                     focus.title=="Relapse Rate EPOCH"~5,
+#                                     focus.title=="Relapse Rate"~5),
+#                           levels=c(1,2,3,4,5), 
+#                           labels=c("Fidelity scale up", "Aggregate exposure", "Behaviour definition","Aggregate health effect","Relapse"))) %>% 
+#   mutate(focus.class=ifelse(is.na(focus.class), "Economic assumptions", as.character(focus.class))) %>% 
+#   # select(focus.class,focus.title) %>% table(., useNA = c("always")) %>% data.frame() %>% filter(Freq>0)
+#   filter(!is.na(focus.class)) %>%
+#   group_by(focus.class) %>% 
+#   summarise(mean_cum_sum_diff.der_value=mean(mean_cum_sum_diff.der_value, na.rm=T)) %>% 
+#   mutate(scenario="EPOCH") %>% 
+#   add_case(lsa_int_cci_df_summary %>% 
+#              mutate(focus.class=factor(case_when(focus.title=="CCI Scale up factor"~1,
+#                                     focus.title=="Percentage of childcare centers participating in intervention"~2,
+#                                     focus.title=="\"Percentage of 3-6 year olds attending formal childcare\""~2,
+#                                     focus.title=="\"Proportion of Fruit Juice in Non-alcoholic beverages\""~3,
+#                                     focus.title=="Childcare settings intervention Change in Diet coefficients"~4,
+#                                     focus.title=="Relapse Rate"~5,
+#                                     focus.title=="Proportion of Cordial in SSB"~3,
+#                                     focus.title=="Proportion of Packed snacks in Discretionary foods"~3,
+#                                     focus.title=="\"Proportion of Cakes/muffins/Cookies in Discretionary foods\""~3,
+#                                     focus.title=="\"Percentage of 2-3 year olds attending formal childcare\""~2,
+#                                     focus.title=="\"Proportion of Chocolate/candy in Discretionary foods\""~3,
+#                                     focus.title=="Childcare settings intervention Change in PA coefficients"~4),
+#          levels=c(1,2,3,4,5), 
+#          labels=c("Fidelity scale up", "Aggregate exposure", "Behaviour definition","Aggregate health effect","Relapse"))) %>% 
+#   mutate(focus.class=ifelse(is.na(focus.class), "Economic assumptions", as.character(focus.class))) %>% 
+#   # select(focus.class,focus.title) %>% table(., useNA = c("always")) %>% data.frame() %>% filter(Freq>0)
+#   filter(!is.na(focus.class)) %>%
+#   group_by(focus.class) %>% 
+#   summarise(mean_cum_sum_diff.der_value=mean(mean_cum_sum_diff.der_value, na.rm=T)) %>% 
+#   mutate(scenario="CCI")) %>% 
+#   add_case(lsa_int_si_df_summary %>% 
+#              mutate(focus.class=factor(case_when(focus.title=="SI Scale up factor"~1,
+#                                     focus.title=="SI Percentage of Schools participating in intervention"~2,
+#                                     focus.title=="SI percentage of total diet consumed at school"~3,
+#                                     focus.title=="Relapse Rate"~5,
+#                                     focus.title=="SI % change in PA"~4,
+#                                     focus.title=="SI Percentage of children attending School"~2,
+#                                     focus.title=="SI % Reduction In student Purchases"~4),
+#                           levels=c(1,2,3,4,5), 
+#                           labels=c("Fidelity scale up", "Aggregate exposure", "Behaviour definition","Aggregate health effect","Relapse"))) %>% 
+#                mutate(focus.class=ifelse(is.na(focus.class), "Economic assumptions", as.character(focus.class))) %>% 
+#   # select(focus.class,focus.title) %>% table(., useNA = c("always")) %>% data.frame() %>% filter(Freq>0)
+#   filter(!is.na(focus.class)) %>%
+#   group_by(focus.class) %>% 
+#   summarise(mean_cum_sum_diff.der_value=mean(mean_cum_sum_diff.der_value, na.rm=T)) %>% 
+#     mutate(scenario="SI")) %>% 
+#   add_case(lsa_int_svi_df_summary %>% 
+# mutate(focus.class=factor(case_when(focus.title=="SVI Scale up factor"~1,
+#                                     focus.title=="Average proportion attributed to vouchers"~4,
+#                                     focus.title=="Males Average MET Calculated Inputs"~3,
+#                                     focus.title=="Females Average MET Calculated Inputs"~3,
+#                                     focus.title=="Relapse Rate"~5,
+#                                     focus.title=="\"% of population that Registers for vouchers\""~2,
+#                                     focus.title=="Average Number of Hours of organised sports or activities Weekly"~3),
+#                           levels=c(1,2,3,4,5), 
+#                           labels=c("Fidelity scale up", "Aggregate exposure", "Behaviour definition","Aggregate health effect","Relapse"))) %>% 
+#     mutate(focus.class=ifelse(is.na(focus.class), "Economic assumptions", as.character(focus.class))) %>% 
+#   # select(focus.class,focus.title) %>% table(., useNA = c("always")) %>% data.frame() %>% filter(Freq>0)
+#   filter(!is.na(focus.class)) %>%
+#   group_by(focus.class) %>% 
+#   summarise(mean_cum_sum_diff.der_value=mean(mean_cum_sum_diff.der_value, na.rm=T)) %>% 
+#   mutate(scenario="SVI")) %>% 
+#   add_case(lsa_int_ssb_df_summary %>% 
+# mutate(focus.class=factor(case_when(focus.title=="SSB Scale up factor"~1,
+#                                     focus.title=="SSB Tax %"~4,
+#                                     focus.title=="Relapse Rate"~5,
+#                                     focus.title=="PE Soft drink"~3,
+#                                     focus.title=="PE Fruit Drink"~3,
+#                                     focus.title=="PE Cordial"~3),
+#                           levels=c(1,2,3,4,5), 
+#                          labels=c("Fidelity scale up", "Aggregate exposure", "Behaviour definition","Aggregate health effect","Relapse"))) %>% 
+#     mutate(focus.class=ifelse(is.na(focus.class), "Economic assumptions", as.character(focus.class))) %>% 
+#   # select(focus.class,focus.title) %>% table(., useNA = c("always")) %>% data.frame() %>% filter(Freq>0)
+#   filter(!is.na(focus.class)) %>%
+#   group_by(focus.class) %>% 
+#   summarise(mean_cum_sum_diff.der_value=mean(mean_cum_sum_diff.der_value, na.rm=T)) %>% 
+#   mutate(scenario="SSB")) %>% 
+#   group_by(focus.class) %>% 
+#   mutate(total= sum(mean_cum_sum_diff.der_value, na.rm=F)) %>% 
+#   spread(., scenario, mean_cum_sum_diff.der_value) %>% 
+#   arrange(-total) %>% select(-total) %>%
+#   mutate(EPOCH=ifelse(is.na(EPOCH),"",sprintf("%0.3f",(EPOCH))),
+#          CCI=ifelse(is.na(CCI),"",sprintf("%0.3f",(CCI))),
+#          SI=ifelse(is.na(SI),"",sprintf("%0.3f",(SI))),
+#          SVI=ifelse(is.na(SVI),"",sprintf("%0.3f",(SVI))),
+#          SSB=ifelse(is.na(SSB),"",sprintf("%0.3f",(SSB)))) %>%
+#   rename(" "="focus.class") %>% 
+#   write.csv()
+
 ```
 
 # Early Prevention of Obesity in Children
@@ -6242,3 +6531,1426 @@ df_summary %>%
                    theme = theme(plot.title = element_text(size = 16, hjust = 0.5, face = c("bold")))) & 
   theme(legend.position = "bottom")
 ```
+
+# Plots for chapter
+
+## Energy Density of sugar for each intervention
+```{r, echo=F, message=F, warning=F, error=F, fig.width=1*6*2, fig.height=1*15*2}
+# EPOCH
+combined.sugar.int.df %>% 
+  filter(scenario=="EPOCH") %>% 
+  filter(focus.title=="SUGAR Kj per gram" ) %>%
+  filter(gender.output=='Male') %>%
+  filter(bmi.output=="With obesity") %>%
+  filter(as.numeric(age.groups.output)<=6) %>% 
+  ungroup() %>% 
+  filter(input.value==max(input.value) | input.value==min(input.value)) %>%
+  select(year, run, age.groups.output,diff, diff.det) %>% 
+  gather(., run.class, value, diff:diff.det) %>% 
+  group_by(run, run.class) %>% 
+  mutate(id.group= cur_group_id()) %>% 
+  filter(id.group!=4) %>% 
+  mutate(run.class=factor(id.group, levels=c(1,2,3), labels=c("Lower extreme", "Initial assumption", "Upper extreme"))) %>% 
+  mutate(class=1) %>% 
+  ungroup() %>% 
+  rename("Age output"="age.groups.output") %>%
+  mutate(class=factor(class, levels=c(1,2,3), labels=c("Outcome","Derivative","Cumulative absolute \n difference"))) %>% 
+  mutate(value=ifelse(value>0, round(value, digits = 1), value)) %>% 
+  ggplot()+
+  geom_line(aes(x=year, y=value, color=run.class, linetype=run.class))+
+  facet_grid(rows = vars(class),cols=vars(`Age output`), scales = "free")+
+  scale_color_manual(values=c( "blue","black", "red"))+
+  scale_linetype_manual(values=c(1,2,1))+
+  scale_x_continuous(breaks = c(seq(2010, 2050, 20))) +
+  scale_y_continuous(labels = label_scientific( scale =1,suffix = "%"))+
+  # scale_y_continuous(limits = c(-0.1,0), labels = scales::percent)+
+  # coord_cartesian(ylim = c(-0.001, 0.001), clip="off")+
+  guides(colour = guide_legend("SUGAR Kj per gram"),
+         linetype = guide_legend("SUGAR Kj per gram"))+
+  theme_bw()+xlab("Year")+
+  theme(legend.position = "bottom",
+         panel.spacing=unit(0, "mm"),
+        axis.title.y = element_blank(),
+        strip.text.y = element_text(size = 7),
+        axis.title.x = element_blank())+
+  ggtitle("Early prevention of childhood obesity behaviour", subtitle = "Change in % Males with obesity, for extreme values of energy density of sugar (kJ/g)")+
+  
+  combined.sugar.int.df %>% 
+  filter(scenario=="EPOCH") %>% 
+  filter(focus.title=="SUGAR Kj per gram" ) %>%
+  filter(gender.output=='Male') %>%
+  filter(bmi.output=="With obesity") %>%
+  filter(as.numeric(age.groups.output)<=6) %>% 
+  ungroup() %>% 
+  filter(input.value==max(input.value) | input.value==min(input.value)) %>%
+  select(year, run, age.groups.output,diff.der, diff.det.der) %>% 
+  gather(., run.class, value, diff.der:diff.det.der) %>% 
+  group_by(run, run.class) %>% 
+  mutate(id.group= cur_group_id()) %>% 
+  filter(id.group!=4) %>% 
+  mutate(run.class=factor(id.group, levels=c(1,2,3), labels=c("Lower extreme", "Initial assumption", "Upper extreme"))) %>% 
+  mutate(class=2) %>% 
+  ungroup() %>% 
+  rename("Age output"="age.groups.output") %>%
+  mutate(class=factor(class, levels=c(1,2,3), labels=c("Outcome","Derivative","Cumulative absolute \n difference"))) %>% 
+  ggplot()+
+  geom_line(aes(x=year, y=value, color=run.class, linetype=run.class))+
+  facet_grid(rows = vars(class),cols=vars(`Age output`), scales = "free")+
+  scale_color_manual(values=c( "blue","black", "red"))+
+  scale_linetype_manual(values=c(1,2,1))+
+  scale_x_continuous(breaks = c(seq(2010, 2050, 20))) +
+  scale_y_continuous(labels = label_scientific( scale =1,suffix = "%"))+
+  guides(colour = guide_legend("SUGAR Kj per gram"),
+         linetype = guide_legend("SUGAR Kj per gram"))+
+  theme_bw()+xlab("Year")+
+  theme(legend.position = "bottom",
+         panel.spacing=unit(0, "mm"),
+        axis.title.y = element_blank(),
+        strip.text.y = element_text(size = 7),
+        axis.title.x = element_blank())+
+  
+  combined.sugar.int.df %>% 
+  filter(scenario=="EPOCH") %>% 
+  filter(focus.title=="SUGAR Kj per gram" ) %>%
+  filter(gender.output=='Male') %>%
+  filter(bmi.output=="With obesity") %>%
+  filter(as.numeric(age.groups.output)<=6) %>% 
+  ungroup() %>% 
+  filter(input.value==max(input.value) | input.value==min(input.value)) %>%
+  mutate(cum_sum_diff.der_value.base.model=NA) %>% 
+  select(year, run, age.groups.output,cum_diff_int.diff_int.diff.det_der.value, cum_sum_diff.der_value.base.model) %>% 
+  gather(., run.class, value, cum_diff_int.diff_int.diff.det_der.value:cum_sum_diff.der_value.base.model) %>% 
+  group_by(run, run.class) %>% 
+  mutate(id.group= cur_group_id()) %>% 
+  filter(id.group!=4) %>% 
+  mutate(run.class=factor(id.group, levels=c(1,2,3), labels=c("Lower extreme", "Initial assumption", "Upper extreme"))) %>% 
+  mutate(class=3) %>% 
+  ungroup() %>% 
+  rename("Age output"="age.groups.output") %>%
+  mutate(class=factor(class, levels=c(1,2,3), labels=c("Outcome","Derivative","Cumulative absolute \n difference"))) %>% 
+  ggplot()+
+  geom_line(aes(x=year, y=value, color=run.class, linetype=run.class))+
+  facet_grid(rows = vars(class),cols=vars(`Age output`), scales = "free")+
+  scale_color_manual(values=c( "blue","black", "red"))+
+  scale_linetype_manual(values=c(1,2,1))+
+  scale_x_continuous(breaks = c(seq(2010, 2050, 20))) +
+  # scale_y_continuous(labels = scales::percent)+
+  guides(colour = guide_legend("SUGAR Kj per gram"),
+         linetype = guide_legend("SUGAR Kj per gram"))+
+  theme_bw()+xlab("Year")+
+  theme(legend.position = "bottom",
+        strip.text.y = element_text(size = 7),
+        axis.title.y = element_blank(),
+        panel.spacing=unit(0, "mm"))+
+  
+  # CCI
+  combined.sugar.int.df %>% 
+  filter(scenario=="CCI") %>% 
+  filter(focus.title=="SUGAR Kj per gram" ) %>%
+  filter(gender.output=='Male') %>%
+  filter(bmi.output=="With obesity") %>%
+  filter(as.numeric(age.groups.output)<=6) %>% 
+  ungroup() %>% 
+  filter(input.value==max(input.value) | input.value==min(input.value)) %>%
+  select(year, run, age.groups.output,diff, diff.det) %>% 
+  gather(., run.class, value, diff:diff.det) %>% 
+  group_by(run, run.class) %>% 
+  mutate(id.group= cur_group_id()) %>% 
+  filter(id.group!=4) %>% 
+  mutate(run.class=factor(id.group, levels=c(1,2,3), labels=c("Lower extreme", "Initial assumption", "Upper extreme"))) %>% 
+  mutate(class=1) %>% 
+  ungroup() %>% 
+  rename("Age output"="age.groups.output") %>%
+  mutate(class=factor(class, levels=c(1,2,3), labels=c("Outcome","Derivative","Cumulative absolute \n difference"))) %>% 
+    mutate(value=ifelse(value>0, round(value, digits = 1), value)) %>% 
+  ggplot()+
+  geom_line(aes(x=year, y=value, color=run.class, linetype=run.class))+
+  facet_grid(rows = vars(class),cols=vars(`Age output`), scales = "free")+
+  scale_color_manual(values=c( "blue","black", "red"))+
+  scale_linetype_manual(values=c(1,2,1))+
+  scale_x_continuous(breaks = c(seq(2010, 2050, 20))) +
+  scale_y_continuous(labels = label_scientific( scale =1,suffix = "%"))+
+  guides(colour = guide_legend("SUGAR Kj per gram"),
+         linetype = guide_legend("SUGAR Kj per gram"))+
+  theme_bw()+xlab("Year")+
+  theme(legend.position = "bottom",
+         panel.spacing=unit(0, "mm"),
+        axis.title.y = element_blank(),
+        strip.text.y = element_text(size = 7),
+        axis.title.x = element_blank())+
+  ggtitle("Childcare setting intervention behaviour", subtitle = "Change in % Males with obesity, for extreme values of energy density of sugar (kJ/g)")+
+  
+  combined.sugar.int.df %>% 
+  filter(scenario=="CCI") %>% 
+  filter(focus.title=="SUGAR Kj per gram" ) %>%
+  filter(gender.output=='Male') %>%
+  filter(bmi.output=="With obesity") %>%
+  filter(as.numeric(age.groups.output)<=6) %>% 
+  ungroup() %>% 
+  filter(input.value==max(input.value) | input.value==min(input.value)) %>%
+  select(year, run, age.groups.output,diff.der, diff.det.der) %>% 
+  gather(., run.class, value, diff.der:diff.det.der) %>% 
+  group_by(run, run.class) %>% 
+  mutate(id.group= cur_group_id()) %>% 
+  filter(id.group!=4) %>% 
+  mutate(run.class=factor(id.group, levels=c(1,2,3), labels=c("Lower extreme", "Initial assumption", "Upper extreme"))) %>% 
+  mutate(class=2) %>% 
+  ungroup() %>% 
+  rename("Age output"="age.groups.output") %>%
+  mutate(class=factor(class, levels=c(1,2,3), labels=c("Outcome","Derivative","Cumulative absolute \n difference"))) %>% 
+  ggplot()+
+  geom_line(aes(x=year, y=value, color=run.class, linetype=run.class))+
+  facet_grid(rows = vars(class),cols=vars(`Age output`), scales = "free")+
+  scale_color_manual(values=c( "blue","black", "red"))+
+  scale_linetype_manual(values=c(1,2,1))+
+  scale_x_continuous(breaks = c(seq(2010, 2050, 20))) +
+  # scale_y_continuous(labels = scales::percent)+
+  guides(colour = guide_legend("SUGAR Kj per gram"),
+         linetype = guide_legend("SUGAR Kj per gram"))+
+  theme_bw()+xlab("Year")+
+  theme(legend.position = "bottom",
+         panel.spacing=unit(0, "mm"),
+        axis.title.y = element_blank(),
+        strip.text.y = element_text(size = 7),
+        axis.title.x = element_blank())+
+  
+  combined.sugar.int.df %>% 
+  filter(scenario=="CCI") %>% 
+  filter(focus.title=="SUGAR Kj per gram" ) %>%
+  filter(gender.output=='Male') %>%
+  filter(bmi.output=="With obesity") %>%
+  filter(as.numeric(age.groups.output)<=6) %>% 
+  ungroup() %>% 
+  filter(input.value==max(input.value) | input.value==min(input.value)) %>%
+  mutate(cum_sum_diff.der_value.base.model=NA) %>% 
+  select(year, run, age.groups.output,cum_diff_int.diff_int.diff.det_der.value, cum_sum_diff.der_value.base.model) %>% 
+  gather(., run.class, value, cum_diff_int.diff_int.diff.det_der.value:cum_sum_diff.der_value.base.model) %>% 
+  group_by(run, run.class) %>% 
+  mutate(id.group= cur_group_id()) %>% 
+  filter(id.group!=4) %>% 
+  mutate(run.class=factor(id.group, levels=c(1,2,3), labels=c("Lower extreme", "Initial assumption", "Upper extreme"))) %>% 
+  mutate(class=3) %>% 
+  ungroup() %>% 
+  rename("Age output"="age.groups.output") %>%
+  mutate(class=factor(class, levels=c(1,2,3), labels=c("Outcome","Derivative","Cumulative absolute \n difference"))) %>% 
+  ggplot()+
+  geom_line(aes(x=year, y=value, color=run.class, linetype=run.class))+
+  facet_grid(rows = vars(class),cols=vars(`Age output`), scales = "free")+
+  scale_color_manual(values=c( "blue","black", "red"))+
+  scale_linetype_manual(values=c(1,2,1))+
+  scale_x_continuous(breaks = c(seq(2010, 2050, 20))) +
+  # scale_y_continuous(labels = scales::percent)+
+  guides(colour = guide_legend("SUGAR Kj per gram"),
+         linetype = guide_legend("SUGAR Kj per gram"))+
+  theme_bw()+xlab("Year")+
+  theme(legend.position = "bottom",
+        strip.text.y = element_text(size = 7),
+        axis.title.y = element_blank(),
+        panel.spacing=unit(0, "mm"))+
+  
+  # SI
+  combined.sugar.int.df %>% 
+  filter(scenario=="SI") %>% 
+  filter(focus.title=="SUGAR Kj per gram" ) %>%
+  filter(gender.output=='Male') %>%
+  filter(bmi.output=="With obesity") %>%
+  filter(as.numeric(age.groups.output)<=6) %>% 
+  ungroup() %>% 
+  filter(input.value==max(input.value) | input.value==min(input.value)) %>%
+  select(year, run, age.groups.output,diff, diff.det) %>% 
+  gather(., run.class, value, diff:diff.det) %>% 
+  group_by(run, run.class) %>% 
+  mutate(id.group= cur_group_id()) %>% 
+  filter(id.group!=4) %>% 
+  mutate(run.class=factor(id.group, levels=c(1,2,3), labels=c("Lower extreme", "Initial assumption", "Upper extreme"))) %>% 
+  mutate(class=1) %>% 
+  ungroup() %>% 
+  rename("Age output"="age.groups.output") %>%
+  mutate(class=factor(class, levels=c(1,2,3), labels=c("Outcome","Derivative","Cumulative absolute \n difference"))) %>% 
+    mutate(value=ifelse(value>0, round(value, digits = 1), value)) %>% 
+  ggplot()+
+  geom_line(aes(x=year, y=value, color=run.class, linetype=run.class))+
+  facet_grid(rows = vars(class),cols=vars(`Age output`), scales = "free")+
+  scale_color_manual(values=c( "blue","black", "red"))+
+  scale_linetype_manual(values=c(1,2,1))+
+  scale_x_continuous(breaks = c(seq(2010, 2050, 20))) +
+  scale_y_continuous(labels = label_scientific( scale =1,suffix = "%"))+
+  guides(colour = guide_legend("SUGAR Kj per gram"),
+         linetype = guide_legend("SUGAR Kj per gram"))+
+  theme_bw()+xlab("Year")+
+  theme(legend.position = "bottom",
+         panel.spacing=unit(0, "mm"),
+        axis.title.y = element_blank(),
+        strip.text.y = element_text(size = 7),
+        axis.title.x = element_blank())+
+  # ggtitle("SI behaviour: changes in SUGAR Kj per gram", subtitle = "Males with obesity")+
+  ggtitle("School setting intervention behaviour", subtitle = "Change in % Males with obesity, for extreme values of energy density of sugar (kJ/g)")+
+  
+  combined.sugar.int.df %>% 
+  filter(scenario=="SI") %>% 
+  filter(focus.title=="SUGAR Kj per gram" ) %>%
+  filter(gender.output=='Male') %>%
+  filter(bmi.output=="With obesity") %>%
+  filter(as.numeric(age.groups.output)<=6) %>% 
+  ungroup() %>% 
+  filter(input.value==max(input.value) | input.value==min(input.value)) %>%
+  select(year, run, age.groups.output,diff.der, diff.det.der) %>% 
+  gather(., run.class, value, diff.der:diff.det.der) %>% 
+  group_by(run, run.class) %>% 
+  mutate(id.group= cur_group_id()) %>% 
+  filter(id.group!=4) %>% 
+  mutate(run.class=factor(id.group, levels=c(1,2,3), labels=c("Lower extreme", "Initial assumption", "Upper extreme"))) %>% 
+  mutate(class=2) %>% 
+  ungroup() %>% 
+  rename("Age output"="age.groups.output") %>%
+  mutate(class=factor(class, levels=c(1,2,3), labels=c("Outcome","Derivative","Cumulative absolute \n difference"))) %>% 
+  ggplot()+
+  geom_line(aes(x=year, y=value, color=run.class, linetype=run.class))+
+  facet_grid(rows = vars(class),cols=vars(`Age output`), scales = "free")+
+  scale_color_manual(values=c( "blue","black", "red"))+
+  scale_linetype_manual(values=c(1,2,1))+
+  scale_x_continuous(breaks = c(seq(2010, 2050, 20))) +
+  # scale_y_continuous(labels = scales::percent)+
+  guides(colour = guide_legend("SUGAR Kj per gram"),
+         linetype = guide_legend("SUGAR Kj per gram"))+
+  theme_bw()+xlab("Year")+
+  theme(legend.position = "bottom",
+         panel.spacing=unit(0, "mm"),
+        axis.title.y = element_blank(),
+        strip.text.y = element_text(size = 7),
+        axis.title.x = element_blank())+
+  
+  combined.sugar.int.df %>% 
+  filter(scenario=="SI") %>% 
+  filter(focus.title=="SUGAR Kj per gram" ) %>%
+  filter(gender.output=='Male') %>%
+  filter(bmi.output=="With obesity") %>%
+  filter(as.numeric(age.groups.output)<=6) %>% 
+  ungroup() %>% 
+  filter(input.value==max(input.value) | input.value==min(input.value)) %>%
+  mutate(cum_sum_diff.der_value.base.model=NA) %>% 
+  select(year, run, age.groups.output,cum_diff_int.diff_int.diff.det_der.value, cum_sum_diff.der_value.base.model) %>% 
+  gather(., run.class, value, cum_diff_int.diff_int.diff.det_der.value:cum_sum_diff.der_value.base.model) %>% 
+  group_by(run, run.class) %>% 
+  mutate(id.group= cur_group_id()) %>% 
+  filter(id.group!=4) %>% 
+  mutate(run.class=factor(id.group, levels=c(1,2,3), labels=c("Lower extreme", "Initial assumption", "Upper extreme"))) %>% 
+  mutate(class=3) %>% 
+  ungroup() %>% 
+  rename("Age output"="age.groups.output") %>%
+  mutate(class=factor(class, levels=c(1,2,3), labels=c("Outcome","Derivative","Cumulative absolute \n difference"))) %>% 
+  ggplot()+
+  geom_line(aes(x=year, y=value, color=run.class, linetype=run.class))+
+  facet_grid(rows = vars(class),cols=vars(`Age output`), scales = "free")+
+  scale_color_manual(values=c( "blue","black", "red"))+
+  scale_linetype_manual(values=c(1,2,1))+
+  scale_x_continuous(breaks = c(seq(2010, 2050, 20))) +
+  # scale_y_continuous(labels = scales::percent)+
+  guides(colour = guide_legend("SUGAR Kj per gram"),
+         linetype = guide_legend("SUGAR Kj per gram"))+
+  theme_bw()+xlab("Year")+
+  theme(legend.position = "bottom",
+        strip.text.y = element_text(size = 7),
+        axis.title.y = element_blank(),
+        panel.spacing=unit(0, "mm"))+
+  
+  # SVI
+  combined.sugar.int.df %>% 
+  filter(scenario=="SVI") %>% 
+  filter(focus.title=="SUGAR Kj per gram" ) %>%
+  filter(gender.output=='Male') %>%
+  filter(bmi.output=="With obesity") %>%
+  filter(as.numeric(age.groups.output)<=6) %>% 
+  ungroup() %>% 
+  filter(input.value==max(input.value) | input.value==min(input.value)) %>%
+  select(year, run, age.groups.output,diff, diff.det) %>% 
+  gather(., run.class, value, diff:diff.det) %>% 
+  group_by(run, run.class) %>% 
+  mutate(id.group= cur_group_id()) %>% 
+  filter(id.group!=4) %>% 
+  mutate(run.class=factor(id.group, levels=c(1,2,3), labels=c("Lower extreme", "Initial assumption", "Upper extreme"))) %>% 
+  mutate(class=1) %>% 
+  ungroup() %>% 
+  rename("Age output"="age.groups.output") %>%
+  mutate(class=factor(class, levels=c(1,2,3), labels=c("Outcome","Derivative","Cumulative absolute \n difference"))) %>% 
+    mutate(value=ifelse(value>0, round(value, digits = 1), value)) %>% 
+  ggplot()+
+  geom_line(aes(x=year, y=value, color=run.class, linetype=run.class))+
+  facet_grid(rows = vars(class),cols=vars(`Age output`), scales = "free")+
+  scale_color_manual(values=c( "blue","black", "red"))+
+  scale_linetype_manual(values=c(1,2,1))+
+  scale_x_continuous(breaks = c(seq(2010, 2050, 20))) +
+  scale_y_continuous(labels = label_scientific( scale =1,suffix = "%"))+
+  guides(colour = guide_legend("SUGAR Kj per gram"),
+         linetype = guide_legend("SUGAR Kj per gram"))+
+  theme_bw()+xlab("Year")+
+  theme(legend.position = "bottom",
+         panel.spacing=unit(0, "mm"),
+        axis.title.y = element_blank(),
+        strip.text.y = element_text(size = 7),
+        axis.title.x = element_blank())+
+  ggtitle("Sports vouchers intervention behaviour", subtitle = "Change in % Males with obesity, for extreme values of energy density of sugar (kJ/g)")+
+  
+  combined.sugar.int.df %>% 
+  filter(scenario=="SVI") %>% 
+  filter(focus.title=="SUGAR Kj per gram" ) %>%
+  filter(gender.output=='Male') %>%
+  filter(bmi.output=="With obesity") %>%
+  filter(as.numeric(age.groups.output)<=6) %>% 
+  ungroup() %>% 
+  filter(input.value==max(input.value) | input.value==min(input.value)) %>%
+  select(year, run, age.groups.output,diff.der, diff.det.der) %>% 
+  gather(., run.class, value, diff.der:diff.det.der) %>% 
+  group_by(run, run.class) %>% 
+  mutate(id.group= cur_group_id()) %>% 
+  filter(id.group!=4) %>% 
+  mutate(run.class=factor(id.group, levels=c(1,2,3), labels=c("Lower extreme", "Initial assumption", "Upper extreme"))) %>% 
+  mutate(class=2) %>% 
+  ungroup() %>% 
+  rename("Age output"="age.groups.output") %>%
+  mutate(class=factor(class, levels=c(1,2,3), labels=c("Outcome","Derivative","Cumulative absolute \n difference"))) %>% 
+  ggplot()+
+  geom_line(aes(x=year, y=value, color=run.class, linetype=run.class))+
+  facet_grid(rows = vars(class),cols=vars(`Age output`), scales = "free")+
+  scale_color_manual(values=c( "blue","black", "red"))+
+  scale_linetype_manual(values=c(1,2,1))+
+  scale_x_continuous(breaks = c(seq(2010, 2050, 20))) +
+  # scale_y_continuous(labels = scales::percent)+
+  guides(colour = guide_legend("SUGAR Kj per gram"),
+         linetype = guide_legend("SUGAR Kj per gram"))+
+  theme_bw()+xlab("Year")+
+  theme(legend.position = "bottom",
+         panel.spacing=unit(0, "mm"),
+        axis.title.y = element_blank(),
+        strip.text.y = element_text(size = 7),
+        axis.title.x = element_blank())+
+  
+  combined.sugar.int.df %>% 
+  filter(scenario=="SVI") %>% 
+  filter(focus.title=="SUGAR Kj per gram" ) %>%
+  filter(gender.output=='Male') %>%
+  filter(bmi.output=="With obesity") %>%
+  filter(as.numeric(age.groups.output)<=6) %>% 
+  ungroup() %>% 
+  filter(input.value==max(input.value) | input.value==min(input.value)) %>%
+  mutate(cum_sum_diff.der_value.base.model=NA) %>% 
+  select(year, run, age.groups.output,cum_diff_int.diff_int.diff.det_der.value, cum_sum_diff.der_value.base.model) %>% 
+  gather(., run.class, value, cum_diff_int.diff_int.diff.det_der.value:cum_sum_diff.der_value.base.model) %>% 
+  group_by(run, run.class) %>% 
+  mutate(id.group= cur_group_id()) %>% 
+  filter(id.group!=4) %>% 
+  mutate(run.class=factor(id.group, levels=c(1,2,3), labels=c("Lower extreme", "Initial assumption", "Upper extreme"))) %>% 
+  mutate(class=3) %>% 
+  ungroup() %>% 
+  rename("Age output"="age.groups.output") %>%
+  mutate(class=factor(class, levels=c(1,2,3), labels=c("Outcome","Derivative","Cumulative absolute \n difference"))) %>% 
+  ggplot()+
+  geom_line(aes(x=year, y=value, color=run.class, linetype=run.class))+
+  facet_grid(rows = vars(class),cols=vars(`Age output`), scales = "free")+
+  scale_color_manual(values=c( "blue","black", "red"))+
+  scale_linetype_manual(values=c(1,2,1))+
+  scale_x_continuous(breaks = c(seq(2010, 2050, 20))) +
+  # scale_y_continuous(labels = scales::percent)+
+  guides(colour = guide_legend("SUGAR Kj per gram"),
+         linetype = guide_legend("SUGAR Kj per gram"))+
+  theme_bw()+xlab("Year")+
+  theme(legend.position = "bottom",
+        strip.text.y = element_text(size = 7),
+        axis.title.y = element_blank(),
+        panel.spacing=unit(0, "mm"))+
+  
+  # SSB
+  combined.sugar.int.df %>% 
+  filter(scenario=="SSB") %>% 
+  filter(focus.title=="SUGAR Kj per gram" ) %>%
+  filter(gender.output=='Male') %>%
+  filter(bmi.output=="With obesity") %>%
+  filter(as.numeric(age.groups.output)<=6) %>% 
+  ungroup() %>% 
+  filter(input.value==max(input.value) | input.value==min(input.value)) %>%
+  select(year, run, age.groups.output,diff, diff.det) %>% 
+  gather(., run.class, value, diff:diff.det) %>% 
+  group_by(run, run.class) %>% 
+  mutate(id.group= cur_group_id()) %>% 
+  filter(id.group!=4) %>% 
+  mutate(run.class=factor(id.group, levels=c(1,2,3), labels=c("Lower extreme", "Initial assumption", "Upper extreme"))) %>% 
+  mutate(class=1) %>% 
+  ungroup() %>% 
+  rename("Age output"="age.groups.output") %>%
+  mutate(class=factor(class, levels=c(1,2,3), labels=c("Outcome","Derivative","Cumulative absolute \n difference"))) %>% 
+  mutate(value=ifelse(value>0, round(value, digits = 1), value)) %>% 
+  ggplot()+
+  geom_line(aes(x=year, y=value, color=run.class, linetype=run.class))+
+  facet_grid(rows = vars(class),cols=vars(`Age output`), scales = "free")+
+  scale_color_manual(values=c( "blue","black", "red"))+
+  scale_linetype_manual(values=c(1,2,1))+
+  scale_x_continuous(breaks = c(seq(2010, 2050, 20))) +
+  scale_y_continuous(labels = label_scientific( scale =1,suffix = "%"))+
+  guides(colour = guide_legend("SUGAR Kj per gram"),
+         linetype = guide_legend("SUGAR Kj per gram"))+
+  theme_bw()+xlab("Year")+
+  theme(legend.position = "bottom",
+         panel.spacing=unit(0, "mm"),
+        axis.title.y = element_blank(),
+        strip.text.y = element_text(size = 7),
+        axis.title.x = element_blank())+
+  ggtitle("Sugar sweetend beverage tax behaviour", subtitle = "Change in % Males with obesity, for extreme values of energy density of sugar (kJ/g)")+
+  
+  combined.sugar.int.df %>% 
+  filter(scenario=="SSB") %>% 
+  filter(focus.title=="SUGAR Kj per gram" ) %>%
+  filter(gender.output=='Male') %>%
+  filter(bmi.output=="With obesity") %>%
+  filter(as.numeric(age.groups.output)<=6) %>% 
+  ungroup() %>% 
+  filter(input.value==max(input.value) | input.value==min(input.value)) %>%
+  select(year, run, age.groups.output,diff.der, diff.det.der) %>% 
+  gather(., run.class, value, diff.der:diff.det.der) %>% 
+  group_by(run, run.class) %>% 
+  mutate(id.group= cur_group_id()) %>% 
+  filter(id.group!=4) %>% 
+  mutate(run.class=factor(id.group, levels=c(1,2,3), labels=c("Lower extreme", "Initial assumption", "Upper extreme"))) %>% 
+  mutate(class=2) %>% 
+  ungroup() %>% 
+  rename("Age output"="age.groups.output") %>%
+  mutate(class=factor(class, levels=c(1,2,3), labels=c("Outcome","Derivative","Cumulative absolute \n difference"))) %>% 
+  ggplot()+
+  geom_line(aes(x=year, y=value, color=run.class, linetype=run.class))+
+  facet_grid(rows = vars(class),cols=vars(`Age output`), scales = "free")+
+  scale_color_manual(values=c( "blue","black", "red"))+
+  scale_linetype_manual(values=c(1,2,1))+
+  scale_x_continuous(breaks = c(seq(2010, 2050, 20))) +
+  # scale_y_continuous(labels = scales::percent)+
+  guides(colour = guide_legend("SUGAR Kj per gram"),
+         linetype = guide_legend("SUGAR Kj per gram"))+
+  theme_bw()+xlab("Year")+
+  theme(legend.position = "bottom",
+         panel.spacing=unit(0, "mm"),
+        axis.title.y = element_blank(),
+        strip.text.y = element_text(size = 7),
+        axis.title.x = element_blank())+
+  
+  combined.sugar.int.df %>% 
+  filter(scenario=="SSB") %>% 
+  filter(focus.title=="SUGAR Kj per gram" ) %>%
+  filter(gender.output=='Male') %>%
+  filter(bmi.output=="With obesity") %>%
+  filter(as.numeric(age.groups.output)<=6) %>% 
+  ungroup() %>% 
+  filter(input.value==max(input.value) | input.value==min(input.value)) %>%
+  mutate(cum_sum_diff.der_value.base.model=NA) %>% 
+  select(year, run, age.groups.output,cum_diff_int.diff_int.diff.det_der.value, cum_sum_diff.der_value.base.model) %>% 
+  gather(., run.class, value, cum_diff_int.diff_int.diff.det_der.value:cum_sum_diff.der_value.base.model) %>% 
+  group_by(run, run.class) %>% 
+  mutate(id.group= cur_group_id()) %>% 
+  filter(id.group!=4) %>% 
+  mutate(run.class=factor(id.group, levels=c(1,2,3), labels=c("Lower extreme", "Initial assumption", "Upper extreme"))) %>% 
+  mutate(class=3) %>% 
+  ungroup() %>% 
+  rename("Age output"="age.groups.output") %>%
+  mutate(class=factor(class, levels=c(1,2,3), labels=c("Outcome","Derivative","Cumulative absolute \n difference"))) %>% 
+  ggplot()+
+  geom_line(aes(x=year, y=value, color=run.class, linetype=run.class))+
+  facet_grid(rows = vars(class),cols=vars(`Age output`), scales = "free")+
+  scale_color_manual(values=c( "blue","black", "red"))+
+  scale_linetype_manual(values=c(1,2,1))+
+  scale_x_continuous(breaks = c(seq(2010, 2050, 20))) +
+  # scale_y_continuous(labels = scales::percent)+
+  guides(colour = guide_legend("SUGAR Kj per gram"),
+         linetype = guide_legend("SUGAR Kj per gram"))+
+  theme_bw()+xlab("Year")+
+  theme(legend.position = "bottom",
+        strip.text.y = element_text(size = 7),
+        axis.title.y = element_blank(),
+        panel.spacing=unit(0, "mm"))+
+  
+  plot_layout(ncol=1, nrow = 15, guides = "collect")&theme(legend.position = "bottom")
+
+```
+
+## Energy Density of sugar for each intervention
+```{r, echo=F, message=F, warning=F, error=F, fig.width=1*6*2, fig.height=1*10*2}
+# EPOCH
+combined.sugar.int.df %>% 
+  filter(scenario=="EPOCH") %>% 
+  filter(focus.title=="SUGAR Kj per gram" ) %>%
+  filter(gender.output=='Male') %>%
+  filter(bmi.output=="With obesity") %>%
+  filter(as.numeric(age.groups.output)<=6) %>% 
+  ungroup() %>% 
+  filter(input.value==max(input.value) | input.value==min(input.value)) %>%
+  select(year, run, age.groups.output,diff, diff.det) %>% 
+  gather(., run.class, value, diff:diff.det) %>% 
+  group_by(run, run.class) %>% 
+  mutate(id.group= cur_group_id()) %>% 
+  filter(id.group!=4) %>% 
+  mutate(run.class=factor(id.group, levels=c(1,2,3), labels=c("Lower extreme", "Initial assumption", "Upper extreme"))) %>% 
+  mutate(class=1) %>% 
+  ungroup() %>% 
+  rename("Age output"="age.groups.output") %>%
+  mutate(class=factor(class, levels=c(1,2,3), labels=c("Outcome","Derivative","Cumulative absolute \n difference"))) %>% 
+  mutate(value=ifelse(value>0, round(value, digits = 1), value)) %>% 
+  ggplot()+
+  geom_line(aes(x=year, y=value, color=run.class, linetype=run.class))+
+  facet_grid(rows = vars(class),cols=vars(`Age output`), scales = "free")+
+  scale_color_manual(values=c( "blue","black", "red"))+
+  scale_linetype_manual(values=c(1,2,1))+
+  scale_x_continuous(breaks = c(seq(2010, 2050, 20))) +
+  scale_y_continuous(labels = label_scientific( scale =1,suffix = "%"))+
+  # scale_y_continuous(limits = c(-0.1,0), labels = scales::percent)+
+  # coord_cartesian(ylim = c(-0.001, 0.001), clip="off")+
+  guides(colour = guide_legend("SUGAR Kj per gram"),
+         linetype = guide_legend("SUGAR Kj per gram"))+
+  theme_bw()+xlab("Year")+
+  theme(legend.position = "bottom",
+         panel.spacing=unit(0, "mm"),
+        axis.title.y = element_blank(),
+        strip.text.y = element_text(size = 7),
+        axis.title.x = element_blank())+
+  ggtitle("Early prevention of childhood obesity behaviour", subtitle = "Change in % Males with obesity, for extreme values of energy density of sugar (kJ/g)")+
+  
+  combined.sugar.int.df %>% 
+  filter(scenario=="EPOCH") %>% 
+  filter(focus.title=="SUGAR Kj per gram" ) %>%
+  filter(gender.output=='Male') %>%
+  filter(bmi.output=="With obesity") %>%
+  filter(as.numeric(age.groups.output)<=6) %>% 
+  ungroup() %>% 
+  filter(input.value==max(input.value) | input.value==min(input.value)) %>%
+  select(year, run, age.groups.output,diff.der, diff.det.der) %>% 
+  gather(., run.class, value, diff.der:diff.det.der) %>% 
+  group_by(run, run.class) %>% 
+  mutate(id.group= cur_group_id()) %>% 
+  filter(id.group!=4) %>% 
+  mutate(run.class=factor(id.group, levels=c(1,2,3), labels=c("Lower extreme", "Initial assumption", "Upper extreme"))) %>% 
+  mutate(class=2) %>% 
+  ungroup() %>% 
+  rename("Age output"="age.groups.output") %>%
+  mutate(class=factor(class, levels=c(1,2,3), labels=c("Outcome","Derivative","Cumulative absolute \n difference"))) %>% 
+  ggplot()+
+  geom_line(aes(x=year, y=value, color=run.class, linetype=run.class))+
+  facet_grid(rows = vars(class),cols=vars(`Age output`), scales = "free")+
+  scale_color_manual(values=c( "blue","black", "red"))+
+  scale_linetype_manual(values=c(1,2,1))+
+  scale_x_continuous(breaks = c(seq(2010, 2050, 20))) +
+  scale_y_continuous(labels = label_scientific( scale =1,suffix = "%"))+
+  guides(colour = guide_legend("SUGAR Kj per gram"),
+         linetype = guide_legend("SUGAR Kj per gram"))+
+  theme_bw()+xlab("Year")+
+  theme(legend.position = "bottom",
+         panel.spacing=unit(0, "mm"),
+        axis.title.y = element_blank(),
+        strip.text.y = element_text(size = 7))+
+  
+  # combined.sugar.int.df %>% 
+  # filter(scenario=="EPOCH") %>% 
+  # filter(focus.title=="SUGAR Kj per gram" ) %>%
+  # filter(gender.output=='Male') %>%
+  # filter(bmi.output=="With obesity") %>%
+  # filter(as.numeric(age.groups.output)<=6) %>% 
+  # ungroup() %>% 
+  # filter(input.value==max(input.value) | input.value==min(input.value)) %>%
+  # mutate(cum_sum_diff.der_value.base.model=NA) %>% 
+  # select(year, run, age.groups.output,cum_diff_int.diff_int.diff.det_der.value, cum_sum_diff.der_value.base.model) %>% 
+  # gather(., run.class, value, cum_diff_int.diff_int.diff.det_der.value:cum_sum_diff.der_value.base.model) %>% 
+  # group_by(run, run.class) %>% 
+  # mutate(id.group= cur_group_id()) %>% 
+  # filter(id.group!=4) %>% 
+  # mutate(run.class=factor(id.group, levels=c(1,2,3), labels=c("Lower extreme", "Initial assumption", "Upper extreme"))) %>% 
+  # mutate(class=3) %>% 
+  # ungroup() %>% 
+  # rename("Age output"="age.groups.output") %>%
+  # mutate(class=factor(class, levels=c(1,2,3), labels=c("Outcome","Derivative","Cumulative absolute \n difference"))) %>% 
+  # ggplot()+
+  # geom_line(aes(x=year, y=value, color=run.class, linetype=run.class))+
+  # facet_grid(rows = vars(class),cols=vars(`Age output`), scales = "free")+
+  # scale_color_manual(values=c( "blue","black", "red"))+
+  # scale_linetype_manual(values=c(1,2,1))+
+  # scale_x_continuous(breaks = c(seq(2010, 2050, 20))) +
+  # # scale_y_continuous(labels = scales::percent)+
+  # guides(colour = guide_legend("SUGAR Kj per gram"),
+  #        linetype = guide_legend("SUGAR Kj per gram"))+
+  # theme_bw()+xlab("Year")+
+  # theme(legend.position = "bottom",
+  #       strip.text.y = element_text(size = 7),
+  #       axis.title.y = element_blank(),
+  #       panel.spacing=unit(0, "mm"))+
+  
+  # CCI
+  combined.sugar.int.df %>% 
+  filter(scenario=="CCI") %>% 
+  filter(focus.title=="SUGAR Kj per gram" ) %>%
+  filter(gender.output=='Male') %>%
+  filter(bmi.output=="With obesity") %>%
+  filter(as.numeric(age.groups.output)<=6) %>% 
+  ungroup() %>% 
+  filter(input.value==max(input.value) | input.value==min(input.value)) %>%
+  select(year, run, age.groups.output,diff, diff.det) %>% 
+  gather(., run.class, value, diff:diff.det) %>% 
+  group_by(run, run.class) %>% 
+  mutate(id.group= cur_group_id()) %>% 
+  filter(id.group!=4) %>% 
+  mutate(run.class=factor(id.group, levels=c(1,2,3), labels=c("Lower extreme", "Initial assumption", "Upper extreme"))) %>% 
+  mutate(class=1) %>% 
+  ungroup() %>% 
+  rename("Age output"="age.groups.output") %>%
+  mutate(class=factor(class, levels=c(1,2,3), labels=c("Outcome","Derivative","Cumulative absolute \n difference"))) %>% 
+    mutate(value=ifelse(value>0, round(value, digits = 1), value)) %>% 
+  ggplot()+
+  geom_line(aes(x=year, y=value, color=run.class, linetype=run.class))+
+  facet_grid(rows = vars(class),cols=vars(`Age output`), scales = "free")+
+  scale_color_manual(values=c( "blue","black", "red"))+
+  scale_linetype_manual(values=c(1,2,1))+
+  scale_x_continuous(breaks = c(seq(2010, 2050, 20))) +
+  scale_y_continuous(labels = label_scientific( scale =1,suffix = "%"))+
+  guides(colour = guide_legend("SUGAR Kj per gram"),
+         linetype = guide_legend("SUGAR Kj per gram"))+
+  theme_bw()+xlab("Year")+
+  theme(legend.position = "bottom",
+         panel.spacing=unit(0, "mm"),
+        axis.title.y = element_blank(),
+        strip.text.y = element_text(size = 7),
+        axis.title.x = element_blank())+
+  ggtitle("Childcare setting intervention behaviour", subtitle = "Change in % Males with obesity, for extreme values of energy density of sugar (kJ/g)")+
+  
+  combined.sugar.int.df %>% 
+  filter(scenario=="CCI") %>% 
+  filter(focus.title=="SUGAR Kj per gram" ) %>%
+  filter(gender.output=='Male') %>%
+  filter(bmi.output=="With obesity") %>%
+  filter(as.numeric(age.groups.output)<=6) %>% 
+  ungroup() %>% 
+  filter(input.value==max(input.value) | input.value==min(input.value)) %>%
+  select(year, run, age.groups.output,diff.der, diff.det.der) %>% 
+  gather(., run.class, value, diff.der:diff.det.der) %>% 
+  group_by(run, run.class) %>% 
+  mutate(id.group= cur_group_id()) %>% 
+  filter(id.group!=4) %>% 
+  mutate(run.class=factor(id.group, levels=c(1,2,3), labels=c("Lower extreme", "Initial assumption", "Upper extreme"))) %>% 
+  mutate(class=2) %>% 
+  ungroup() %>% 
+  rename("Age output"="age.groups.output") %>%
+  mutate(class=factor(class, levels=c(1,2,3), labels=c("Outcome","Derivative","Cumulative absolute \n difference"))) %>% 
+  ggplot()+
+  geom_line(aes(x=year, y=value, color=run.class, linetype=run.class))+
+  facet_grid(rows = vars(class),cols=vars(`Age output`), scales = "free")+
+  scale_color_manual(values=c( "blue","black", "red"))+
+  scale_linetype_manual(values=c(1,2,1))+
+  scale_x_continuous(breaks = c(seq(2010, 2050, 20))) +
+  # scale_y_continuous(labels = scales::percent)+
+  guides(colour = guide_legend("SUGAR Kj per gram"),
+         linetype = guide_legend("SUGAR Kj per gram"))+
+  theme_bw()+xlab("Year")+
+  theme(legend.position = "bottom",
+         panel.spacing=unit(0, "mm"),
+        axis.title.y = element_blank(),
+        strip.text.y = element_text(size = 7))+
+  
+  # combined.sugar.int.df %>% 
+  # filter(scenario=="CCI") %>% 
+  # filter(focus.title=="SUGAR Kj per gram" ) %>%
+  # filter(gender.output=='Male') %>%
+  # filter(bmi.output=="With obesity") %>%
+  # filter(as.numeric(age.groups.output)<=6) %>% 
+  # ungroup() %>% 
+  # filter(input.value==max(input.value) | input.value==min(input.value)) %>%
+  # mutate(cum_sum_diff.der_value.base.model=NA) %>% 
+  # select(year, run, age.groups.output,cum_diff_int.diff_int.diff.det_der.value, cum_sum_diff.der_value.base.model) %>% 
+  # gather(., run.class, value, cum_diff_int.diff_int.diff.det_der.value:cum_sum_diff.der_value.base.model) %>% 
+  # group_by(run, run.class) %>% 
+  # mutate(id.group= cur_group_id()) %>% 
+  # filter(id.group!=4) %>% 
+  # mutate(run.class=factor(id.group, levels=c(1,2,3), labels=c("Lower extreme", "Initial assumption", "Upper extreme"))) %>% 
+  # mutate(class=3) %>% 
+  # ungroup() %>% 
+  # rename("Age output"="age.groups.output") %>%
+  # mutate(class=factor(class, levels=c(1,2,3), labels=c("Outcome","Derivative","Cumulative absolute \n difference"))) %>% 
+  # ggplot()+
+  # geom_line(aes(x=year, y=value, color=run.class, linetype=run.class))+
+  # facet_grid(rows = vars(class),cols=vars(`Age output`), scales = "free")+
+  # scale_color_manual(values=c( "blue","black", "red"))+
+  # scale_linetype_manual(values=c(1,2,1))+
+  # scale_x_continuous(breaks = c(seq(2010, 2050, 20))) +
+  # # scale_y_continuous(labels = scales::percent)+
+  # guides(colour = guide_legend("SUGAR Kj per gram"),
+  #        linetype = guide_legend("SUGAR Kj per gram"))+
+  # theme_bw()+xlab("Year")+
+  # theme(legend.position = "bottom",
+  #       strip.text.y = element_text(size = 7),
+  #       axis.title.y = element_blank(),
+  #       panel.spacing=unit(0, "mm"))+
+  
+  # SI
+  combined.sugar.int.df %>% 
+  filter(scenario=="SI") %>% 
+  filter(focus.title=="SUGAR Kj per gram" ) %>%
+  filter(gender.output=='Male') %>%
+  filter(bmi.output=="With obesity") %>%
+  filter(as.numeric(age.groups.output)<=6) %>% 
+  ungroup() %>% 
+  filter(input.value==max(input.value) | input.value==min(input.value)) %>%
+  select(year, run, age.groups.output,diff, diff.det) %>% 
+  gather(., run.class, value, diff:diff.det) %>% 
+  group_by(run, run.class) %>% 
+  mutate(id.group= cur_group_id()) %>% 
+  filter(id.group!=4) %>% 
+  mutate(run.class=factor(id.group, levels=c(1,2,3), labels=c("Lower extreme", "Initial assumption", "Upper extreme"))) %>% 
+  mutate(class=1) %>% 
+  ungroup() %>% 
+  rename("Age output"="age.groups.output") %>%
+  mutate(class=factor(class, levels=c(1,2,3), labels=c("Outcome","Derivative","Cumulative absolute \n difference"))) %>% 
+    mutate(value=ifelse(value>0, round(value, digits = 1), value)) %>% 
+  ggplot()+
+  geom_line(aes(x=year, y=value, color=run.class, linetype=run.class))+
+  facet_grid(rows = vars(class),cols=vars(`Age output`), scales = "free")+
+  scale_color_manual(values=c( "blue","black", "red"))+
+  scale_linetype_manual(values=c(1,2,1))+
+  scale_x_continuous(breaks = c(seq(2010, 2050, 20))) +
+  scale_y_continuous(labels = label_scientific( scale =1,suffix = "%"))+
+  guides(colour = guide_legend("SUGAR Kj per gram"),
+         linetype = guide_legend("SUGAR Kj per gram"))+
+  theme_bw()+xlab("Year")+
+  theme(legend.position = "bottom",
+         panel.spacing=unit(0, "mm"),
+        axis.title.y = element_blank(),
+        strip.text.y = element_text(size = 7),
+        axis.title.x = element_blank())+
+  # ggtitle("SI behaviour: changes in SUGAR Kj per gram", subtitle = "Males with obesity")+
+  ggtitle("School setting intervention behaviour", subtitle = "Change in % Males with obesity, for extreme values of energy density of sugar (kJ/g)")+
+  
+  combined.sugar.int.df %>% 
+  filter(scenario=="SI") %>% 
+  filter(focus.title=="SUGAR Kj per gram" ) %>%
+  filter(gender.output=='Male') %>%
+  filter(bmi.output=="With obesity") %>%
+  filter(as.numeric(age.groups.output)<=6) %>% 
+  ungroup() %>% 
+  filter(input.value==max(input.value) | input.value==min(input.value)) %>%
+  select(year, run, age.groups.output,diff.der, diff.det.der) %>% 
+  gather(., run.class, value, diff.der:diff.det.der) %>% 
+  group_by(run, run.class) %>% 
+  mutate(id.group= cur_group_id()) %>% 
+  filter(id.group!=4) %>% 
+  mutate(run.class=factor(id.group, levels=c(1,2,3), labels=c("Lower extreme", "Initial assumption", "Upper extreme"))) %>% 
+  mutate(class=2) %>% 
+  ungroup() %>% 
+  rename("Age output"="age.groups.output") %>%
+  mutate(class=factor(class, levels=c(1,2,3), labels=c("Outcome","Derivative","Cumulative absolute \n difference"))) %>% 
+  ggplot()+
+  geom_line(aes(x=year, y=value, color=run.class, linetype=run.class))+
+  facet_grid(rows = vars(class),cols=vars(`Age output`), scales = "free")+
+  scale_color_manual(values=c( "blue","black", "red"))+
+  scale_linetype_manual(values=c(1,2,1))+
+  scale_x_continuous(breaks = c(seq(2010, 2050, 20))) +
+  # scale_y_continuous(labels = scales::percent)+
+  guides(colour = guide_legend("SUGAR Kj per gram"),
+         linetype = guide_legend("SUGAR Kj per gram"))+
+  theme_bw()+xlab("Year")+
+  theme(legend.position = "bottom",
+         panel.spacing=unit(0, "mm"),
+        axis.title.y = element_blank(),
+        strip.text.y = element_text(size = 7))+
+  
+  # combined.sugar.int.df %>% 
+  # filter(scenario=="SI") %>% 
+  # filter(focus.title=="SUGAR Kj per gram" ) %>%
+  # filter(gender.output=='Male') %>%
+  # filter(bmi.output=="With obesity") %>%
+  # filter(as.numeric(age.groups.output)<=6) %>% 
+  # ungroup() %>% 
+  # filter(input.value==max(input.value) | input.value==min(input.value)) %>%
+  # mutate(cum_sum_diff.der_value.base.model=NA) %>% 
+  # select(year, run, age.groups.output,cum_diff_int.diff_int.diff.det_der.value, cum_sum_diff.der_value.base.model) %>% 
+  # gather(., run.class, value, cum_diff_int.diff_int.diff.det_der.value:cum_sum_diff.der_value.base.model) %>% 
+  # group_by(run, run.class) %>% 
+  # mutate(id.group= cur_group_id()) %>% 
+  # filter(id.group!=4) %>% 
+  # mutate(run.class=factor(id.group, levels=c(1,2,3), labels=c("Lower extreme", "Initial assumption", "Upper extreme"))) %>% 
+  # mutate(class=3) %>% 
+  # ungroup() %>% 
+  # rename("Age output"="age.groups.output") %>%
+  # mutate(class=factor(class, levels=c(1,2,3), labels=c("Outcome","Derivative","Cumulative absolute \n difference"))) %>% 
+  # ggplot()+
+  # geom_line(aes(x=year, y=value, color=run.class, linetype=run.class))+
+  # facet_grid(rows = vars(class),cols=vars(`Age output`), scales = "free")+
+  # scale_color_manual(values=c( "blue","black", "red"))+
+  # scale_linetype_manual(values=c(1,2,1))+
+  # scale_x_continuous(breaks = c(seq(2010, 2050, 20))) +
+  # # scale_y_continuous(labels = scales::percent)+
+  # guides(colour = guide_legend("SUGAR Kj per gram"),
+  #        linetype = guide_legend("SUGAR Kj per gram"))+
+  # theme_bw()+xlab("Year")+
+  # theme(legend.position = "bottom",
+  #       strip.text.y = element_text(size = 7),
+  #       axis.title.y = element_blank(),
+  #       panel.spacing=unit(0, "mm"))+
+  
+  # SVI
+  combined.sugar.int.df %>% 
+  filter(scenario=="SVI") %>% 
+  filter(focus.title=="SUGAR Kj per gram" ) %>%
+  filter(gender.output=='Male') %>%
+  filter(bmi.output=="With obesity") %>%
+  filter(as.numeric(age.groups.output)<=6) %>% 
+  ungroup() %>% 
+  filter(input.value==max(input.value) | input.value==min(input.value)) %>%
+  select(year, run, age.groups.output,diff, diff.det) %>% 
+  gather(., run.class, value, diff:diff.det) %>% 
+  group_by(run, run.class) %>% 
+  mutate(id.group= cur_group_id()) %>% 
+  filter(id.group!=4) %>% 
+  mutate(run.class=factor(id.group, levels=c(1,2,3), labels=c("Lower extreme", "Initial assumption", "Upper extreme"))) %>% 
+  mutate(class=1) %>% 
+  ungroup() %>% 
+  rename("Age output"="age.groups.output") %>%
+  mutate(class=factor(class, levels=c(1,2,3), labels=c("Outcome","Derivative","Cumulative absolute \n difference"))) %>% 
+    mutate(value=ifelse(value>0, round(value, digits = 1), value)) %>% 
+  ggplot()+
+  geom_line(aes(x=year, y=value, color=run.class, linetype=run.class))+
+  facet_grid(rows = vars(class),cols=vars(`Age output`), scales = "free")+
+  scale_color_manual(values=c( "blue","black", "red"))+
+  scale_linetype_manual(values=c(1,2,1))+
+  scale_x_continuous(breaks = c(seq(2010, 2050, 20))) +
+  scale_y_continuous(labels = label_scientific( scale =1,suffix = "%"))+
+  guides(colour = guide_legend("SUGAR Kj per gram"),
+         linetype = guide_legend("SUGAR Kj per gram"))+
+  theme_bw()+xlab("Year")+
+  theme(legend.position = "bottom",
+         panel.spacing=unit(0, "mm"),
+        axis.title.y = element_blank(),
+        strip.text.y = element_text(size = 7),
+        axis.title.x = element_blank())+
+  ggtitle("Sports vouchers intervention behaviour", subtitle = "Change in % Males with obesity, for extreme values of energy density of sugar (kJ/g)")+
+  
+  combined.sugar.int.df %>% 
+  filter(scenario=="SVI") %>% 
+  filter(focus.title=="SUGAR Kj per gram" ) %>%
+  filter(gender.output=='Male') %>%
+  filter(bmi.output=="With obesity") %>%
+  filter(as.numeric(age.groups.output)<=6) %>% 
+  ungroup() %>% 
+  filter(input.value==max(input.value) | input.value==min(input.value)) %>%
+  select(year, run, age.groups.output,diff.der, diff.det.der) %>% 
+  gather(., run.class, value, diff.der:diff.det.der) %>% 
+  group_by(run, run.class) %>% 
+  mutate(id.group= cur_group_id()) %>% 
+  filter(id.group!=4) %>% 
+  mutate(run.class=factor(id.group, levels=c(1,2,3), labels=c("Lower extreme", "Initial assumption", "Upper extreme"))) %>% 
+  mutate(class=2) %>% 
+  ungroup() %>% 
+  rename("Age output"="age.groups.output") %>%
+  mutate(class=factor(class, levels=c(1,2,3), labels=c("Outcome","Derivative","Cumulative absolute \n difference"))) %>% 
+  ggplot()+
+  geom_line(aes(x=year, y=value, color=run.class, linetype=run.class))+
+  facet_grid(rows = vars(class),cols=vars(`Age output`), scales = "free")+
+  scale_color_manual(values=c( "blue","black", "red"))+
+  scale_linetype_manual(values=c(1,2,1))+
+  scale_x_continuous(breaks = c(seq(2010, 2050, 20))) +
+  # scale_y_continuous(labels = scales::percent)+
+  guides(colour = guide_legend("SUGAR Kj per gram"),
+         linetype = guide_legend("SUGAR Kj per gram"))+
+  theme_bw()+xlab("Year")+
+  theme(legend.position = "bottom",
+         panel.spacing=unit(0, "mm"),
+        axis.title.y = element_blank(),
+        strip.text.y = element_text(size = 7))+
+  
+  # combined.sugar.int.df %>% 
+  # filter(scenario=="SVI") %>% 
+  # filter(focus.title=="SUGAR Kj per gram" ) %>%
+  # filter(gender.output=='Male') %>%
+  # filter(bmi.output=="With obesity") %>%
+  # filter(as.numeric(age.groups.output)<=6) %>% 
+  # ungroup() %>% 
+  # filter(input.value==max(input.value) | input.value==min(input.value)) %>%
+  # mutate(cum_sum_diff.der_value.base.model=NA) %>% 
+  # select(year, run, age.groups.output,cum_diff_int.diff_int.diff.det_der.value, cum_sum_diff.der_value.base.model) %>% 
+  # gather(., run.class, value, cum_diff_int.diff_int.diff.det_der.value:cum_sum_diff.der_value.base.model) %>% 
+  # group_by(run, run.class) %>% 
+  # mutate(id.group= cur_group_id()) %>% 
+  # filter(id.group!=4) %>% 
+  # mutate(run.class=factor(id.group, levels=c(1,2,3), labels=c("Lower extreme", "Initial assumption", "Upper extreme"))) %>% 
+  # mutate(class=3) %>% 
+  # ungroup() %>% 
+  # rename("Age output"="age.groups.output") %>%
+  # mutate(class=factor(class, levels=c(1,2,3), labels=c("Outcome","Derivative","Cumulative absolute \n difference"))) %>% 
+  # ggplot()+
+  # geom_line(aes(x=year, y=value, color=run.class, linetype=run.class))+
+  # facet_grid(rows = vars(class),cols=vars(`Age output`), scales = "free")+
+  # scale_color_manual(values=c( "blue","black", "red"))+
+  # scale_linetype_manual(values=c(1,2,1))+
+  # scale_x_continuous(breaks = c(seq(2010, 2050, 20))) +
+  # # scale_y_continuous(labels = scales::percent)+
+  # guides(colour = guide_legend("SUGAR Kj per gram"),
+  #        linetype = guide_legend("SUGAR Kj per gram"))+
+  # theme_bw()+xlab("Year")+
+  # theme(legend.position = "bottom",
+  #       strip.text.y = element_text(size = 7),
+  #       axis.title.y = element_blank(),
+  #       panel.spacing=unit(0, "mm"))+
+  
+  # SSB
+  combined.sugar.int.df %>% 
+  filter(scenario=="SSB") %>% 
+  filter(focus.title=="SUGAR Kj per gram" ) %>%
+  filter(gender.output=='Male') %>%
+  filter(bmi.output=="With obesity") %>%
+  filter(as.numeric(age.groups.output)<=6) %>% 
+  ungroup() %>% 
+  filter(input.value==max(input.value) | input.value==min(input.value)) %>%
+  select(year, run, age.groups.output,diff, diff.det) %>% 
+  gather(., run.class, value, diff:diff.det) %>% 
+  group_by(run, run.class) %>% 
+  mutate(id.group= cur_group_id()) %>% 
+  filter(id.group!=4) %>% 
+  mutate(run.class=factor(id.group, levels=c(1,2,3), labels=c("Lower extreme", "Initial assumption", "Upper extreme"))) %>% 
+  mutate(class=1) %>% 
+  ungroup() %>% 
+  rename("Age output"="age.groups.output") %>%
+  mutate(class=factor(class, levels=c(1,2,3), labels=c("Outcome","Derivative","Cumulative absolute \n difference"))) %>% 
+  mutate(value=ifelse(value>0, round(value, digits = 1), value)) %>% 
+  ggplot()+
+  geom_line(aes(x=year, y=value, color=run.class, linetype=run.class))+
+  facet_grid(rows = vars(class),cols=vars(`Age output`), scales = "free")+
+  scale_color_manual(values=c( "blue","black", "red"))+
+  scale_linetype_manual(values=c(1,2,1))+
+  scale_x_continuous(breaks = c(seq(2010, 2050, 20))) +
+  scale_y_continuous(labels = label_scientific( scale =1,suffix = "%"))+
+  guides(colour = guide_legend("SUGAR Kj per gram"),
+         linetype = guide_legend("SUGAR Kj per gram"))+
+  theme_bw()+xlab("Year")+
+  theme(legend.position = "bottom",
+         panel.spacing=unit(0, "mm"),
+        axis.title.y = element_blank(),
+        strip.text.y = element_text(size = 7),
+        axis.title.x = element_blank())+
+  ggtitle("Sugar sweetend beverage tax behaviour", subtitle = "Change in % Males with obesity, for extreme values of energy density of sugar (kJ/g)")+
+  
+  combined.sugar.int.df %>% 
+  filter(scenario=="SSB") %>% 
+  filter(focus.title=="SUGAR Kj per gram" ) %>%
+  filter(gender.output=='Male') %>%
+  filter(bmi.output=="With obesity") %>%
+  filter(as.numeric(age.groups.output)<=6) %>% 
+  ungroup() %>% 
+  filter(input.value==max(input.value) | input.value==min(input.value)) %>%
+  select(year, run, age.groups.output,diff.der, diff.det.der) %>% 
+  gather(., run.class, value, diff.der:diff.det.der) %>% 
+  group_by(run, run.class) %>% 
+  mutate(id.group= cur_group_id()) %>% 
+  filter(id.group!=4) %>% 
+  mutate(run.class=factor(id.group, levels=c(1,2,3), labels=c("Lower extreme", "Initial assumption", "Upper extreme"))) %>% 
+  mutate(class=2) %>% 
+  ungroup() %>% 
+  rename("Age output"="age.groups.output") %>%
+  mutate(class=factor(class, levels=c(1,2,3), labels=c("Outcome","Derivative","Cumulative absolute \n difference"))) %>% 
+  ggplot()+
+  geom_line(aes(x=year, y=value, color=run.class, linetype=run.class))+
+  facet_grid(rows = vars(class),cols=vars(`Age output`), scales = "free")+
+  scale_color_manual(values=c( "blue","black", "red"))+
+  scale_linetype_manual(values=c(1,2,1))+
+  scale_x_continuous(breaks = c(seq(2010, 2050, 20))) +
+  # scale_y_continuous(labels = scales::percent)+
+  guides(colour = guide_legend("SUGAR Kj per gram"),
+         linetype = guide_legend("SUGAR Kj per gram"))+
+  theme_bw()+xlab("Year")+
+  theme(legend.position = "bottom",
+         panel.spacing=unit(0, "mm"),
+        axis.title.y = element_blank(),
+        strip.text.y = element_text(size = 7))+
+  
+  # combined.sugar.int.df %>% 
+  # filter(scenario=="SSB") %>% 
+  # filter(focus.title=="SUGAR Kj per gram" ) %>%
+  # filter(gender.output=='Male') %>%
+  # filter(bmi.output=="With obesity") %>%
+  # filter(as.numeric(age.groups.output)<=6) %>% 
+  # ungroup() %>% 
+  # filter(input.value==max(input.value) | input.value==min(input.value)) %>%
+  # mutate(cum_sum_diff.der_value.base.model=NA) %>% 
+  # select(year, run, age.groups.output,cum_diff_int.diff_int.diff.det_der.value, cum_sum_diff.der_value.base.model) %>% 
+  # gather(., run.class, value, cum_diff_int.diff_int.diff.det_der.value:cum_sum_diff.der_value.base.model) %>% 
+  # group_by(run, run.class) %>% 
+  # mutate(id.group= cur_group_id()) %>% 
+  # filter(id.group!=4) %>% 
+  # mutate(run.class=factor(id.group, levels=c(1,2,3), labels=c("Lower extreme", "Initial assumption", "Upper extreme"))) %>% 
+  # mutate(class=3) %>% 
+  # ungroup() %>% 
+  # rename("Age output"="age.groups.output") %>%
+  # mutate(class=factor(class, levels=c(1,2,3), labels=c("Outcome","Derivative","Cumulative absolute \n difference"))) %>% 
+  # ggplot()+
+  # geom_line(aes(x=year, y=value, color=run.class, linetype=run.class))+
+  # facet_grid(rows = vars(class),cols=vars(`Age output`), scales = "free")+
+  # scale_color_manual(values=c( "blue","black", "red"))+
+  # scale_linetype_manual(values=c(1,2,1))+
+  # scale_x_continuous(breaks = c(seq(2010, 2050, 20))) +
+  # # scale_y_continuous(labels = scales::percent)+
+  # guides(colour = guide_legend("SUGAR Kj per gram"),
+  #        linetype = guide_legend("SUGAR Kj per gram"))+
+  # theme_bw()+xlab("Year")+
+  # theme(legend.position = "bottom",
+  #       strip.text.y = element_text(size = 7),
+  #       axis.title.y = element_blank(),
+  #       panel.spacing=unit(0, "mm"))+
+  
+  plot_layout(ncol=1, nrow = 10, guides = "collect")&theme(legend.position = "bottom")
+
+```
+
+
+### Policy specific inputs
+```{r, echo=F, message=F, warning=F, error=F, fig.width=1*6*2, fig.height=1*10*2}
+# EPOCH
+epoch.int.df %>% 
+  filter(grepl("Scale up",focus) & bmi.output=="With obesity") %>% 
+  filter(gender.output=='Male') %>%
+  filter(bmi.output=="With obesity") %>%
+  filter(as.numeric(age.groups.output)<=6) %>% 
+  ungroup() %>% 
+  filter(input.value==max(input.value) | input.value==min(input.value)) %>% 
+  select(year, run, age.groups.output,diff, diff.det) %>% 
+  gather(., run.class, value, diff:diff.det) %>% 
+  group_by(run, run.class) %>% 
+  mutate(id.group= cur_group_id()) %>% 
+  filter(id.group!=4) %>% 
+  mutate(run.class=factor(id.group, levels=c(1,2,3), labels=c("Lower extreme", "Initial assumption", "Upper extreme"))) %>% 
+  mutate(class=1) %>% 
+  ungroup() %>% 
+  rename("Age output"="age.groups.output") %>%
+  mutate(class=factor(class, levels=c(1,2,3), labels=c("Outcome","Derivative","Cumulative absolute \n difference"))) %>% 
+  mutate(value=ifelse(value>0, round(value, digits = 1), value)) %>% 
+  ggplot()+
+  geom_line(aes(x=year, y=value, color=run.class, linetype=run.class))+
+  facet_grid(rows = vars(class),cols=vars(`Age output`), scales = "free")+
+  scale_color_manual(values=c( "blue","black", "red"))+
+  scale_linetype_manual(values=c(1,2,1))+
+  scale_x_continuous(breaks = c(seq(2010, 2050, 20))) +
+  # scale_y_continuous(labels = scales::label_number(suffix = "%", scale =100, accuracy = 0.1))+
+  scale_y_continuous(labels = label_scientific( scale =100,suffix = "%", accuracy = 0.1))+
+  guides(colour = guide_legend("Scale up fidelity"),
+         linetype = guide_legend("Scale up fidelity"))+
+  theme_bw()+xlab("Year")+
+  theme(legend.position = "bottom",
+         panel.spacing=unit(0, "mm"),
+        axis.title.y = element_blank(),
+        strip.text.y = element_text(size = 7),
+        axis.title.x = element_blank())+
+  ggtitle("Early prevention of childhood obesity behaviour", subtitle = "Change in % Males with obesity, for extreme values of intervention scale up fidelity")+
+  
+  epoch.int.df %>% 
+  filter(grepl("Scale up",focus) & bmi.output=="With obesity") %>% 
+  filter(gender.output=='Male') %>%
+  filter(bmi.output=="With obesity") %>%
+  filter(as.numeric(age.groups.output)<=6)  %>% 
+  ungroup() %>% 
+  filter(input.value==max(input.value) | input.value==min(input.value)) %>%
+  select(year, run, age.groups.output,diff.der, diff.det.der) %>% 
+  gather(., run.class, value, diff.der:diff.det.der) %>% 
+  group_by(run, run.class) %>% 
+  mutate(id.group= cur_group_id()) %>% 
+  filter(id.group!=4) %>% 
+  mutate(run.class=factor(id.group, levels=c(1,2,3), labels=c("Lower extreme", "Initial assumption", "Upper extreme"))) %>% 
+  mutate(class=2) %>% 
+  ungroup() %>% 
+  rename("Age output"="age.groups.output") %>%
+  mutate(class=factor(class, levels=c(1,2,3), labels=c("Outcome","Derivative","Cumulative absolute \n difference"))) %>% 
+  ggplot()+
+  geom_line(aes(x=year, y=value, color=run.class, linetype=run.class))+
+  facet_grid(rows = vars(class),cols=vars(`Age output`), scales = "free")+
+  scale_color_manual(values=c( "blue","black", "red"))+
+  scale_linetype_manual(values=c(1,2,1))+
+  scale_x_continuous(breaks = c(seq(2010, 2050, 20))) +
+  # scale_y_continuous(labels = scales::label_number(suffix = "", scale =100, accuracy = 0.1))+
+  scale_y_continuous(labels = label_scientific( scale =100,suffix = "", accuracy = 0.1))+
+  guides(colour = guide_legend("Scale up fidelity"),
+         linetype = guide_legend("Scale up fidelity"))+
+  theme_bw()+xlab("Year")+
+  theme(legend.position = "bottom",
+         panel.spacing=unit(0, "mm"),
+        axis.title.y = element_blank(),
+        strip.text.y = element_text(size = 7))+
+  
+  # CCI
+  cci.int.df %>% 
+  filter(grepl("Scale up",focus) & bmi.output=="With obesity") %>% 
+  filter(gender.output=='Male') %>%
+  filter(bmi.output=="With obesity") %>%
+  filter(as.numeric(age.groups.output)<=6) %>% 
+  ungroup() %>% 
+  filter(input.value==max(input.value) | input.value==min(input.value)) %>%
+  select(year, run, age.groups.output,diff, diff.det) %>% 
+  gather(., run.class, value, diff:diff.det) %>% 
+  group_by(run, run.class) %>% 
+  mutate(id.group= cur_group_id()) %>% 
+  filter(id.group!=4) %>% 
+  mutate(run.class=factor(id.group, levels=c(1,2,3), labels=c("Lower extreme", "Initial assumption", "Upper extreme"))) %>% 
+  mutate(class=1) %>% 
+  ungroup() %>% 
+  rename("Age output"="age.groups.output") %>%
+  mutate(class=factor(class, levels=c(1,2,3), labels=c("Outcome","Derivative","Cumulative absolute \n difference"))) %>% 
+    mutate(value=ifelse(value>0, round(value, digits = 1), value)) %>% 
+  ggplot()+
+  geom_line(aes(x=year, y=value, color=run.class, linetype=run.class))+
+  facet_grid(rows = vars(class),cols=vars(`Age output`), scales = "free")+
+  scale_color_manual(values=c( "blue","black", "red"))+
+  scale_linetype_manual(values=c(1,2,1))+
+  scale_x_continuous(breaks = c(seq(2010, 2050, 20))) +
+  # scale_y_continuous(labels = scales::label_number(suffix = "%", scale =100, accuracy = 0.1))+
+  scale_y_continuous(labels = label_scientific( scale =100,suffix = "%", accuracy = 0.1))+
+  guides(colour = guide_legend("Scale up fidelity"),
+         linetype = guide_legend("Scale up fidelity"))+
+  theme_bw()+xlab("Year")+
+  theme(legend.position = "bottom",
+         panel.spacing=unit(0, "mm"),
+        axis.title.y = element_blank(),
+        strip.text.y = element_text(size = 7),
+        axis.title.x = element_blank())+
+  ggtitle("Childcare setting intervention behaviour", subtitle = "Change in % Males with obesity, for extreme values of intervention scale up fidelity")+
+  
+  cci.int.df %>% 
+  filter(grepl("Scale up",focus) & bmi.output=="With obesity") %>% 
+  filter(gender.output=='Male') %>%
+  filter(bmi.output=="With obesity") %>%
+  filter(as.numeric(age.groups.output)<=6) %>% 
+  ungroup() %>% 
+  filter(input.value==max(input.value) | input.value==min(input.value)) %>%
+  select(year, run, age.groups.output,diff.der, diff.det.der) %>% 
+  gather(., run.class, value, diff.der:diff.det.der) %>% 
+  group_by(run, run.class) %>% 
+  mutate(id.group= cur_group_id()) %>% 
+  filter(id.group!=4) %>% 
+  mutate(run.class=factor(id.group, levels=c(1,2,3), labels=c("Lower extreme", "Initial assumption", "Upper extreme"))) %>% 
+  mutate(class=2) %>% 
+  ungroup() %>% 
+  rename("Age output"="age.groups.output") %>%
+  mutate(class=factor(class, levels=c(1,2,3), labels=c("Outcome","Derivative","Cumulative absolute \n difference"))) %>% 
+  ggplot()+
+  geom_line(aes(x=year, y=value, color=run.class, linetype=run.class))+
+  facet_grid(rows = vars(class),cols=vars(`Age output`), scales = "free")+
+  scale_color_manual(values=c( "blue","black", "red"))+
+  scale_linetype_manual(values=c(1,2,1))+
+  scale_x_continuous(breaks = c(seq(2010, 2050, 20))) +
+  scale_y_continuous(labels = label_scientific( scale =100,suffix = "", accuracy = 0.1))+
+  # scale_y_continuous(labels = scales::label_number(suffix = "", scale =100, accuracy = 0.1))+
+  guides(colour = guide_legend("Scale up fidelity"),
+         linetype = guide_legend("Scale up fidelity"))+
+  theme_bw()+xlab("Year")+
+  theme(legend.position = "bottom",
+         panel.spacing=unit(0, "mm"),
+        axis.title.y = element_blank(),
+        strip.text.y = element_text(size = 7))+
+
+  # SI
+  si.int.df %>% 
+  filter(grepl("Scale up",focus) & bmi.output=="With obesity") %>% 
+  filter(gender.output=='Male') %>%
+  filter(bmi.output=="With obesity") %>%
+  filter(as.numeric(age.groups.output)<=6) %>% 
+  ungroup() %>% 
+  filter(input.value==max(input.value) | input.value==min(input.value)) %>%
+  select(year, run, age.groups.output,diff, diff.det) %>% 
+  gather(., run.class, value, diff:diff.det) %>% 
+  group_by(run, run.class) %>% 
+  mutate(id.group= cur_group_id()) %>% 
+  filter(id.group!=4) %>% 
+  mutate(run.class=factor(id.group, levels=c(1,2,3), labels=c("Lower extreme", "Initial assumption", "Upper extreme"))) %>% 
+  mutate(class=1) %>% 
+  ungroup() %>% 
+  rename("Age output"="age.groups.output") %>%
+  mutate(class=factor(class, levels=c(1,2,3), labels=c("Outcome","Derivative","Cumulative absolute \n difference"))) %>% 
+    mutate(value=ifelse(value>0, round(value, digits = 1), value)) %>% 
+  ggplot()+
+  geom_line(aes(x=year, y=value, color=run.class, linetype=run.class))+
+  facet_grid(rows = vars(class),cols=vars(`Age output`), scales = "free")+
+  scale_color_manual(values=c( "blue","black", "red"))+
+  scale_linetype_manual(values=c(1,2,1))+
+  scale_x_continuous(breaks = c(seq(2010, 2050, 20))) +
+  scale_y_continuous(labels = scales::label_number(suffix = "%", scale =100, accuracy = 0.1))+
+  guides(colour = guide_legend("Scale up fidelity"),
+         linetype = guide_legend("Scale up fidelity"))+
+  theme_bw()+xlab("Year")+
+  theme(legend.position = "bottom",
+         panel.spacing=unit(0, "mm"),
+        axis.title.y = element_blank(),
+        strip.text.y = element_text(size = 7),
+        axis.title.x = element_blank())+
+  # ggtitle("SI behaviour: changes in SUGAR Kj per gram", subtitle = "Males with obesity")+
+  ggtitle("School setting intervention behaviour", subtitle = "Change in % Males with obesity, for extreme values of intervention scale up fidelity")+
+  
+  si.int.df %>% 
+  filter(grepl("Scale up",focus) & bmi.output=="With obesity") %>% 
+  filter(gender.output=='Male') %>%
+  filter(bmi.output=="With obesity") %>%
+  filter(as.numeric(age.groups.output)<=6) %>% 
+  ungroup() %>% 
+  filter(input.value==max(input.value) | input.value==min(input.value)) %>%
+  select(year, run, age.groups.output,diff.der, diff.det.der) %>% 
+  gather(., run.class, value, diff.der:diff.det.der) %>% 
+  group_by(run, run.class) %>% 
+  mutate(id.group= cur_group_id()) %>% 
+  filter(id.group!=4) %>% 
+  mutate(run.class=factor(id.group, levels=c(1,2,3), labels=c("Lower extreme", "Initial assumption", "Upper extreme"))) %>% 
+  mutate(class=2) %>% 
+  ungroup() %>% 
+  rename("Age output"="age.groups.output") %>%
+  mutate(class=factor(class, levels=c(1,2,3), labels=c("Outcome","Derivative","Cumulative absolute \n difference"))) %>% 
+  ggplot()+
+  geom_line(aes(x=year, y=value, color=run.class, linetype=run.class))+
+  facet_grid(rows = vars(class),cols=vars(`Age output`), scales = "free")+
+  scale_color_manual(values=c( "blue","black", "red"))+
+  scale_linetype_manual(values=c(1,2,1))+
+  scale_x_continuous(breaks = c(seq(2010, 2050, 20))) +
+  # scale_y_continuous(labels = scales::label_number(suffix = "", scale =100, accuracy = 0.1))+
+      scale_y_continuous(labels = label_scientific( scale =100,suffix = "", accuracy = 0.1))+
+  guides(colour = guide_legend("Scale up fidelity"),
+         linetype = guide_legend("Scale up fidelity"))+
+  theme_bw()+xlab("Year")+
+  theme(legend.position = "bottom",
+         panel.spacing=unit(0, "mm"),
+        axis.title.y = element_blank(),
+        strip.text.y = element_text(size = 7))+
+  
+  # SVI
+  svi.int.df %>% 
+  filter(grepl("Scale up",focus) & bmi.output=="With obesity") %>% 
+  filter(gender.output=='Male') %>%
+  filter(bmi.output=="With obesity") %>%
+  filter(as.numeric(age.groups.output)<=6) %>% 
+  ungroup() %>% 
+  filter(input.value==max(input.value) | input.value==min(input.value)) %>%
+  select(year, run, age.groups.output,diff, diff.det) %>% 
+  gather(., run.class, value, diff:diff.det) %>% 
+  group_by(run, run.class) %>% 
+  mutate(id.group= cur_group_id()) %>% 
+  filter(id.group!=4) %>% 
+  mutate(run.class=factor(id.group, levels=c(1,2,3), labels=c("Lower extreme", "Initial assumption", "Upper extreme"))) %>% 
+  mutate(class=1) %>% 
+  ungroup() %>% 
+  rename("Age output"="age.groups.output") %>%
+  mutate(class=factor(class, levels=c(1,2,3), labels=c("Outcome","Derivative","Cumulative absolute \n difference"))) %>% 
+    mutate(value=ifelse(value>0, round(value, digits = 1), value)) %>% 
+  ggplot()+
+  geom_line(aes(x=year, y=value, color=run.class, linetype=run.class))+
+  facet_grid(rows = vars(class),cols=vars(`Age output`), scales = "free")+
+  scale_color_manual(values=c( "blue","black", "red"))+
+  scale_linetype_manual(values=c(1,2,1))+
+  scale_x_continuous(breaks = c(seq(2010, 2050, 20))) +
+  scale_y_continuous(labels = scales::label_number(suffix = "%", scale =100, accuracy = 0.1))+
+  guides(colour = guide_legend("Scale up fidelity"),
+         linetype = guide_legend("Scale up fidelity"))+
+  theme_bw()+xlab("Year")+
+  theme(legend.position = "bottom",
+         panel.spacing=unit(0, "mm"),
+        axis.title.y = element_blank(),
+        strip.text.y = element_text(size = 7),
+        axis.title.x = element_blank())+
+  ggtitle("Sports vouchers intervention behaviour", subtitle = "Change in % Males with obesity, for extreme values of intervention scale up fidelity")+
+  
+  svi.int.df %>% 
+  filter(grepl("Scale up",focus) & bmi.output=="With obesity") %>% 
+  filter(gender.output=='Male') %>%
+  filter(bmi.output=="With obesity") %>%
+  filter(as.numeric(age.groups.output)<=6) %>% 
+  ungroup() %>% 
+  filter(input.value==max(input.value) | input.value==min(input.value)) %>%
+  select(year, run, age.groups.output,diff.der, diff.det.der) %>% 
+  gather(., run.class, value, diff.der:diff.det.der) %>% 
+  group_by(run, run.class) %>% 
+  mutate(id.group= cur_group_id()) %>% 
+  filter(id.group!=4) %>% 
+  mutate(run.class=factor(id.group, levels=c(1,2,3), labels=c("Lower extreme", "Initial assumption", "Upper extreme"))) %>% 
+  mutate(class=2) %>% 
+  ungroup() %>% 
+  rename("Age output"="age.groups.output") %>%
+  mutate(class=factor(class, levels=c(1,2,3), labels=c("Outcome","Derivative","Cumulative absolute \n difference"))) %>% 
+  ggplot()+
+  geom_line(aes(x=year, y=value, color=run.class, linetype=run.class))+
+  facet_grid(rows = vars(class),cols=vars(`Age output`), scales = "free")+
+  scale_color_manual(values=c( "blue","black", "red"))+
+  scale_linetype_manual(values=c(1,2,1))+
+  scale_x_continuous(breaks = c(seq(2010, 2050, 20))) +
+  # scale_y_continuous(labels = scales::label_number(suffix = "", scale =100, accuracy = 0.1))+
+    scale_y_continuous(labels = label_scientific( scale =100,suffix = "", accuracy = 0.1))+
+  guides(colour = guide_legend("Scale up fidelity"),
+         linetype = guide_legend("Scale up fidelity"))+
+  theme_bw()+xlab("Year")+
+  theme(legend.position = "bottom",
+         panel.spacing=unit(0, "mm"),
+        axis.title.y = element_blank(),
+        strip.text.y = element_text(size = 7))+
+  
+    # SSB
+  ssb.int.df %>% 
+  filter(grepl("Scale up",focus) & bmi.output=="With obesity") %>% 
+  filter(gender.output=='Male') %>%
+  filter(bmi.output=="With obesity") %>%
+  filter(as.numeric(age.groups.output)<=6) %>% 
+  ungroup() %>% 
+  filter(input.value==max(input.value) | input.value==min(input.value)) %>%
+  select(year, run, age.groups.output,diff, diff.det) %>% 
+  gather(., run.class, value, diff:diff.det) %>% 
+  group_by(run, run.class) %>% 
+  mutate(id.group= cur_group_id()) %>% 
+  filter(id.group!=4) %>% 
+  mutate(run.class=factor(id.group, levels=c(1,2,3), labels=c("Lower extreme", "Initial assumption", "Upper extreme"))) %>% 
+  mutate(class=1) %>% 
+  ungroup() %>% 
+  rename("Age output"="age.groups.output") %>%
+  mutate(class=factor(class, levels=c(1,2,3), labels=c("Outcome","Derivative","Cumulative absolute \n difference"))) %>% 
+  mutate(value=ifelse(value>0, round(value, digits = 1), value)) %>% 
+  ggplot()+
+  geom_line(aes(x=year, y=value, color=run.class, linetype=run.class))+
+  facet_grid(rows = vars(class),cols=vars(`Age output`), scales = "free")+
+  scale_color_manual(values=c( "blue","black", "red"))+
+  scale_linetype_manual(values=c(1,2,1))+
+  scale_x_continuous(breaks = c(seq(2010, 2050, 20))) +
+  # scale_y_continuous(labels = label_scientific( scale =100,suffix = "%"))+
+  scale_y_continuous(labels = scales::label_number(suffix = "%", scale =100, accuracy = 0.1))+
+  guides(colour = guide_legend("Scale up fidelity"),
+         linetype = guide_legend("Scale up fidelity"))+
+  theme_bw()+xlab("Year")+
+  theme(legend.position = "bottom",
+         panel.spacing=unit(0, "mm"),
+        axis.title.y = element_blank(),
+        strip.text.y = element_text(size = 7),
+        axis.title.x = element_blank())+
+  ggtitle("Sugar sweetend beverage tax behaviour", subtitle = "Change in % Males with obesity, for extreme values of intervention scale up fidelity")+
+  
+  ssb.int.df %>% 
+  filter(grepl("Scale up",focus) & bmi.output=="With obesity") %>% 
+  filter(gender.output=='Male') %>%
+  filter(bmi.output=="With obesity") %>%
+  filter(as.numeric(age.groups.output)<=6) %>% 
+  ungroup() %>% 
+  filter(input.value==max(input.value) | input.value==min(input.value)) %>%
+  select(year, run, age.groups.output,diff.der, diff.det.der) %>% 
+  gather(., run.class, value, diff.der:diff.det.der) %>% 
+  group_by(run, run.class) %>% 
+  mutate(id.group= cur_group_id()) %>% 
+  filter(id.group!=4) %>% 
+  mutate(run.class=factor(id.group, levels=c(1,2,3), labels=c("Lower extreme", "Initial assumption", "Upper extreme"))) %>% 
+  mutate(class=2) %>% 
+  ungroup() %>% 
+  rename("Age output"="age.groups.output") %>%
+  mutate(class=factor(class, levels=c(1,2,3), labels=c("Outcome","Derivative","Cumulative absolute \n difference"))) %>% 
+  ggplot()+
+  geom_line(aes(x=year, y=value, color=run.class, linetype=run.class))+
+  facet_grid(rows = vars(class),cols=vars(`Age output`), scales = "free")+
+  scale_color_manual(values=c( "blue","black", "red"))+
+  scale_linetype_manual(values=c(1,2,1))+
+  scale_x_continuous(breaks = c(seq(2010, 2050, 20))) +
+  scale_y_continuous(labels = scales::label_number(suffix = "", scale =100, accuracy = 0.1))+
+  # scale_y_continuous(labels = label_scientific( scale =100,suffix = ""))+
+  guides(colour = guide_legend("Scale up fidelity"),
+         linetype = guide_legend("Scale up fidelity"))+
+  theme_bw()+xlab("Year")+
+  theme(legend.position = "bottom",
+         panel.spacing=unit(0, "mm"),
+        axis.title.y = element_blank(),
+        strip.text.y = element_text(size = 7))+
+  
+    plot_layout(ncol=1, nrow = 10, guides = "collect")&theme(legend.position = "bottom")
+
+```
+
+
